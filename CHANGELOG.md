@@ -1,5 +1,9 @@
 # WorkshopPower -- historial de versiones
 
+## 2.7.10 -- 2026-10-30
+
+- The temperature chart no longer fails in DWC 3.6 (zoom plugin); the side bar scrolls inside when it is taller than the window
+
 ## 2.7.9 -- 2026-10-30
 
 - Range picker: the button of the 3.6 line shows its range; the side bar group is called Probing
