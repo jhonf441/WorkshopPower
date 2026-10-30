@@ -1,0 +1,18 @@
+{
+  "id": "WorkshopPower",
+  "name": "Power Usage",
+  "author": "jhonf441",
+  "version": "2.7.5",
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/jhonf441/WorkshopPower",
+  "tags": [
+    "power",
+    "monitor"
+  ],
+  "dwcVersion": "3.7",
+  "dwcDependencies": [
+    "WorkshopService"
+  ],
+  "sbcRequired": false,
+  "data": {}
+}
