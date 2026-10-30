@@ -1,5 +1,17 @@
 # WorkshopPower -- historial de versiones
 
+## 2.7.9 -- 2026-10-30
+
+- Range picker: the button of the 3.6 line shows its range; the side bar group is called Probing
+
+## 2.7.8 -- 2026-10-30
+
+- The history takes a time range like CloudWatch; a scanned meter that is already set up opens its card; the meter test sends no name; the history shows an icon while it loads
+
+## 2.7.7 -- 2026-10-30
+
+- Pellet feed select readable in the dark theme; Power: scanned meters already set up open their card, the test sends no name, history empty state with icon
+
 ## 2.7.6 -- 2026-10-30
 
 - Manifest: sbcRequired true (needs WorkshopService); side bar keeps the group names

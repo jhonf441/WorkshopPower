@@ -244,6 +244,7 @@
 		"device_id": "Device ID",
 		"meter_data": "Meter data",
 		"in_use": "in use",
+		"already_configured": "already set up as {name}",
 		"none_found_check_that_it_s": "None found. Check that it's on and on the same WiFi; you can also type the IP by hand.",
 		"search_the_network_10_s": "Search the network (~10 s)",
 		"finds_the_ip_and_protocol_version": "Finds the IP and protocol version. Tap one to use its data.",

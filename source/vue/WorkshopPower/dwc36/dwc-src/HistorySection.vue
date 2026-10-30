@@ -6,34 +6,8 @@
 				<div class="text-subtitle-1 font-weight-medium">
 					<v-icon small class="mr-1" color="primary">mdi-chart-line</v-icon>{{ $t('plugins.WorkshopPower.consumption.detailed_history') }}
 				</div>
-				<v-btn-toggle v-model="range" mandatory dense color="primary">
-					<v-btn small value="24h">24 h</v-btn>
-					<v-btn small value="7d">{{ $t('plugins.WorkshopPower.consumption.7_days') }}</v-btn>
-					<v-btn small value="30d">{{ $t('plugins.WorkshopPower.consumption.30_days') }}</v-btn>
-					<v-btn small value="custom" :aria-label="$t('plugins.WorkshopPower.consumption.from')" @click="toggleDates"><v-icon small>mdi-calendar-range</v-icon></v-btn>
-				</v-btn-toggle>
+				<range-picker v-model="rangeVal" />
 			</div>
-
-			<v-expand-transition>
-				<v-row v-show="range === 'custom' && datesOpen" dense class="mt-2">
-					<v-col cols="6" sm="4">
-						<v-menu v-model="withSinceMenu" :close-on-content-click="false" offset-y min-width="auto">
-							<template v-slot:activator="{ on, attrs }">
-								<v-text-field v-model="withSince" :label="$t('plugins.WorkshopPower.consumption.from')" readonly dense hide-details outlined prepend-inner-icon="mdi-calendar" v-bind="attrs" v-on="on" />
-							</template>
-							<v-date-picker v-model="withSince" no-title color="primary" :max="withUntil" @input="withSinceMenu = false; search()" />
-						</v-menu>
-					</v-col>
-					<v-col cols="6" sm="4">
-						<v-menu v-model="withUntilMenu" :close-on-content-click="false" offset-y min-width="auto">
-							<template v-slot:activator="{ on, attrs }">
-								<v-text-field v-model="withUntil" :label="$t('plugins.WorkshopPower.consumption.to')" readonly dense hide-details outlined prepend-inner-icon="mdi-calendar" v-bind="attrs" v-on="on" />
-							</template>
-							<v-date-picker v-model="withUntil" no-title color="primary" :min="withSince" @input="withUntilMenu = false; search()" />
-						</v-menu>
-					</v-col>
-				</v-row>
-			</v-expand-transition>
 
 			<div v-if="summary" class="span-tiles mt-3">
 				<div class="tile">
@@ -91,8 +65,9 @@
 				</details>
 				<div v-if="idle" class="text-caption grey--text mt-1">{{ $t('plugins.WorkshopPower.consumption.idle_hint') }}</div>
 			</template>
-			<div v-else class="text-caption grey--text text-center py-6">
-				{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_readings_in_the_range') }}
+			<div v-else class="history-empty">
+				<v-icon large color="grey" aria-hidden="true">mdi-chart-timeline-variant</v-icon>
+				<div class="text-body-2">{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_readings_in_the_range') }}</div>
 			</div>
 		</v-card-text>
 	</v-card>
@@ -101,33 +76,27 @@
 <script>
 import { api } from './workshop-api.js'
 import DetailChart from './DetailChart.vue'
+import RangePicker from './RangePicker.vue' // vue/_shared36
+import { relative, resolve, asTexts } from './range-picker.js' // vue/_shared36
 import { fmtKwh, costText } from './money.js'
-import { asDateLocal, asDateHourLocal } from './dates.js'
+import { asDateHourLocal } from './dates.js'
 import { parseTs } from './jobs.js'
 import { baseload } from './job-insights.js'
 
 // Readings every 30 s: more than 3 min without a reading = gap (machine/meter off). A null point is inserted so that the
 // chart cuts the line instead of joining the ends with a straight ramp that looks like real consumption.
 const GAP_MS = 3 * 60 * 1000
-const DAYS_SPAN = { '24h': 1, '7d': 7, '30d': 30 }
 
 export default {
-	components: { DetailChart },
+	components: { DetailChart, RangePicker },
 	props: {
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
 		meter: { type: String, default: '' }
 	},
 	data() {
-		const today = new Date()
 		return {
 			NBSP: ' ',
-			range: '24h',
-			withSince: asDateLocal(new Date(today.getTime() - 7 * 86400000)),
-			withUntil: asDateLocal(today),
-			datesOpen: true, // the calendar button shows the date fields; tapping it again while selected hides them
-			lastRange: '24h', // range before this tap: the mandatory group already switched to 'custom' when the click handler runs
-			withSinceMenu: false,
-			withUntilMenu: false,
+			rangeVal: relative(24, 'hours'), // the time range of the history: the last 24 hours until it is changed (range-picker.js)
 			summary: null,
 			serial: [],
 			serialStepS: 0, // width of a point in seconds when the service averaged a long range; 0 = raw readings
@@ -152,10 +121,8 @@ export default {
 		}
 	},
 	watch: {
-		range(v) {
-			this.lastRange = v
-			if (v === 'custom') this.datesOpen = true
-			else this.search()
+		rangeVal() {
+			this.search()
 		},
 		meter() {
 			this.search()
@@ -165,9 +132,6 @@ export default {
 		this.search()
 	},
 	methods: {
-		toggleDates() {
-			if (this.lastRange === 'custom') this.datesOpen = !this.datesOpen
-		},
 		fmtKwh,
 		costOf(kwh) {
 			return costText(kwh, this.tariff, this.$i18n.locale)
@@ -188,17 +152,10 @@ export default {
 			return out
 		},
 		async search() {
-			let since
-			let until
-			if (this.range === 'custom') {
-				since = this.withSince
-				until = this.withUntil
-			} else {
-				const nowDate = new Date()
-				since = asDateHourLocal(new Date(nowDate.getTime() - DAYS_SPAN[this.range] * 86400000))
-				// +10 min of margin: the Pi clock runs a bit ahead
-				until = asDateHourLocal(new Date(nowDate.getTime() + 10 * 60000))
-			}
+			const r = resolve(this.rangeVal, new Date())
+			const since = asTexts(r).from
+			// a range that ends now gets +10 min of margin: the Pi clock runs a bit ahead
+			const until = this.rangeVal.type === 'relative' ? asDateHourLocal(new Date(r.to.getTime() + 10 * 60000)) : asTexts(r).to
 			this.loading = true
 			try {
 				const data = await api('energy.history', Object.assign({ from: since, to: until, limit: 1 }, this.meter ? { meter: this.meter } : {}))
@@ -264,5 +221,14 @@ export default {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+.history-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	text-align: center;
+	padding: 24px 8px;
+	color: var(--tp-faint, #9e9e9e);
 }
 </style>

@@ -244,6 +244,7 @@
 		"device_id": "ID del dispositivo",
 		"meter_data": "Datos del medidor",
 		"in_use": "en uso",
+		"already_configured": "ya configurado como {name}",
 		"none_found_check_that_it_s": "No apareció ninguno. Revisa que esté encendido y en el mismo WiFi; también puedes escribir la IP a mano.",
 		"search_the_network_10_s": "Buscar en la red (~10 s)",
 		"finds_the_ip_and_protocol_version": "Encuentra la IP y la versión de protocolo. Toca uno para usar sus datos.",

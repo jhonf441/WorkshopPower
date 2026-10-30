@@ -6,34 +6,8 @@
 				<div class="text-title-medium font-weight-medium">
 					<v-icon size="small" class="mr-1" color="primary">mdi-chart-line</v-icon>{{ $t('plugins.WorkshopPower.consumption.detailed_history') }}
 				</div>
-				<v-btn-toggle v-model="range" mandatory density="compact" color="primary">
-					<v-btn size="small" value="24h">24 h</v-btn>
-					<v-btn size="small" value="7d">{{ $t('plugins.WorkshopPower.consumption.7_days') }}</v-btn>
-					<v-btn size="small" value="30d">{{ $t('plugins.WorkshopPower.consumption.30_days') }}</v-btn>
-					<v-btn size="small" value="custom" :aria-label="$t('plugins.WorkshopPower.consumption.from')" @click="toggleDates"><v-icon size="small">mdi-calendar-range</v-icon></v-btn>
-				</v-btn-toggle>
+				<range-picker v-model="rangeVal" />
 			</div>
-
-			<ExpandTransition>
-				<v-row v-show="range === 'custom' && datesOpen" density="compact" class="mt-2">
-					<v-col cols="6" sm="4">
-						<v-menu v-model="withSinceMenu" :close-on-content-click="false" min-width="auto">
-							<template #activator="{ props: activator }">
-								<v-text-field v-model="withSince" :label="$t('plugins.WorkshopPower.consumption.from')" readonly density="compact" hide-details variant="outlined" prepend-inner-icon="mdi-calendar" v-bind="activator" />
-							</template>
-							<v-date-picker :model-value="pickerDate(withSince)" hide-header color="primary" :max="pickerDate(withUntil)" @update:model-value="pickSince" />
-						</v-menu>
-					</v-col>
-					<v-col cols="6" sm="4">
-						<v-menu v-model="withUntilMenu" :close-on-content-click="false" min-width="auto">
-							<template #activator="{ props: activator }">
-								<v-text-field v-model="withUntil" :label="$t('plugins.WorkshopPower.consumption.to')" readonly density="compact" hide-details variant="outlined" prepend-inner-icon="mdi-calendar" v-bind="activator" />
-							</template>
-							<v-date-picker :model-value="pickerDate(withUntil)" hide-header color="primary" :min="pickerDate(withSince)" @update:model-value="pickUntil" />
-						</v-menu>
-					</v-col>
-				</v-row>
-			</ExpandTransition>
 
 			<div v-if="summary" class="span-tiles mt-3">
 				<div class="tile">
@@ -91,29 +65,30 @@
 				</details>
 				<div v-if="idle" class="text-body-small text-medium-emphasis mt-1">{{ $t('plugins.WorkshopPower.consumption.idle_hint') }}</div>
 			</template>
-			<div v-else class="text-body-small text-medium-emphasis text-center py-6">
-				{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_readings_in_the_range') }}
+			<div v-else class="history-empty">
+				<v-icon size="large" color="grey" aria-hidden="true">mdi-chart-timeline-variant</v-icon>
+				<div class="text-body-medium">{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_readings_in_the_range') }}</div>
 			</div>
 		</v-card-text>
 	</v-card>
 </template>
 
 <script setup>
-import { ExpandTransition } from './expand-transition.js'
+import RangePicker from './RangePicker.vue' // vue/_shared
+import { relative, resolve, asTexts } from './range-picker.js' // vue/_shared
 
 import { computed, onMounted, ref, watch } from 'vue'
 import { i18n } from './dwc-host.js'
 import { api } from './workshop-api.js'
 import DetailChart from './DetailChart.vue'
 import { fmtKwh, costText } from './money.js'
-import { asDateLocal, asDateHourLocal } from './dates.js'
+import { asDateHourLocal } from './dates.js'
 import { parseTs } from './jobs.js'
 import { baseload } from './job-insights.js'
 
 // Readings every 30 s: more than 3 min without a reading = gap (machine/meter off). A null point is inserted so that the
 // chart cuts the line instead of joining the ends with a straight ramp that looks like real consumption.
 const GAP_MS = 3 * 60 * 1000
-const DAYS_SPAN = { '24h': 1, '7d': 7, '30d': 30 }
 const NBSP = ' '
 
 const props = defineProps({
@@ -121,18 +96,8 @@ const props = defineProps({
 	meter: { type: String, default: '' }
 })
 
-const today0 = new Date()
-const range = ref('24h')
-// the calendar button shows the date fields; tapping it again while it is selected hides them (the group is mandatory, it cannot unselect)
-const datesOpen = ref(true)
-let lastRange = '24h' // range before this tap: the group already switched to 'custom' when the click handler runs
-function toggleDates() {
-	if (lastRange === 'custom') datesOpen.value = !datesOpen.value
-}
-const withSince = ref(asDateLocal(new Date(today0.getTime() - 7 * 86400000)))
-const withUntil = ref(asDateLocal(today0))
-const withSinceMenu = ref(false)
-const withUntilMenu = ref(false)
+// the time range of the history: the last 24 hours until it is changed (range-picker.js)
+const rangeVal = ref(relative(24, 'hours'))
 const summary = ref(null)
 const serial = ref([])
 const serialStepS = ref(0) // width of a point in seconds when the service averaged a long range; 0 = raw readings
@@ -140,11 +105,6 @@ const loading = ref(false)
 
 function costOf(kwh) {
 	return costText(kwh, props.tariff, i18n.locale)
-}
-// "2026-10-19" (local) -> Date at local midnight, for v-date-picker (Vuetify 4 takes and gives Date objects)
-function pickerDate(text) {
-	const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(text || ''))
-	return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : undefined
 }
 function serialTimed(field) {
 	const out = []
@@ -167,26 +127,15 @@ const serialVoltage = computed(() => serialTimed('voltage_v'))
 const serialCurrent = computed(() => serialTimed('current_a'))
 const idle = computed(() => baseload(serial.value))
 
-watch(range, v => {
-	lastRange = v
-	if (v === 'custom') datesOpen.value = true
-	else search()
-})
+watch(rangeVal, () => search())
 watch(() => props.meter, () => search())
 onMounted(() => search())
 
 async function search() {
-	let since
-	let until
-	if (range.value === 'custom') {
-		since = withSince.value
-		until = withUntil.value
-	} else {
-		const nowDate = new Date()
-		since = asDateHourLocal(new Date(nowDate.getTime() - DAYS_SPAN[range.value] * 86400000))
-		// +10 min of margin: the Pi clock runs a bit ahead
-		until = asDateHourLocal(new Date(nowDate.getTime() + 10 * 60000))
-	}
+	const r = resolve(rangeVal.value, new Date())
+	const since = asTexts(r).from
+	// a range that ends now gets +10 min of margin: the Pi clock runs a bit ahead
+	const until = rangeVal.value.type === 'relative' ? asDateHourLocal(new Date(r.to.getTime() + 10 * 60000)) : asTexts(r).to
 	loading.value = true
 	try {
 		const data = await api('energy.history', Object.assign({ from: since, to: until, limit: 1 }, props.meter ? { meter: props.meter } : {}))
@@ -200,17 +149,6 @@ async function search() {
 	} finally {
 		loading.value = false
 	}
-}
-// a day chosen in a date picker (a Date) -> the text the service takes; the menu closes and the query runs
-function pickSince(d) {
-	if (d) withSince.value = asDateLocal(new Date(d))
-	withSinceMenu.value = false
-	search()
-}
-function pickUntil(d) {
-	if (d) withUntil.value = asDateLocal(new Date(d))
-	withUntilMenu.value = false
-	search()
 }
 </script>
 
@@ -261,5 +199,14 @@ function pickUntil(d) {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+.history-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	text-align: center;
+	padding: 24px 8px;
+	color: var(--tp-faint, #9e9e9e);
 }
 </style>

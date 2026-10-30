@@ -92,12 +92,13 @@
 							<div
 								v-for="d in found" :key="d.ip + d.id"
 								class="encontrado" :class="{ 'found-sel': form.id === d.id }"
-								@click="use(d)"
+								@click="pickFound(d)"
 							>
 								<v-icon size="small" class="mr-2">mdi-wifi</v-icon>
 								<span class="text-body-medium">{{ d.ip }}</span>
 								<span class="text-body-small text-medium-emphasis ml-2 meter-data">{{ d.id }} &middot; v{{ d.version || '?' }}</span>
-								<v-chip v-if="d.current" size="x-small" variant="flat" class="ml-2 text-white" color="success">{{ $t('plugins.WorkshopPower.meterConfig.in_use') }}</v-chip>
+								<v-chip v-if="configuredOf(d)" size="x-small" variant="flat" class="ml-2 text-white" color="success">{{ $t('plugins.WorkshopPower.meterConfig.already_configured', { name: configuredOf(d).name }) }}</v-chip>
+								<v-chip v-else-if="d.current" size="x-small" variant="flat" class="ml-2 text-white" color="success">{{ $t('plugins.WorkshopPower.meterConfig.in_use') }}</v-chip>
 							</div>
 						</div>
 					</div>
@@ -418,6 +419,20 @@ async function search() {
 		searching.value = false
 	}
 }
+// a found device that is already one of the configured meters (same ID)
+function configuredOf(d) {
+	return meters.value.find(m => m.id === d.id) || null
+}
+// a configured one opens its own card (with the IP the search saw); a new one fills the editor
+function pickFound(d) {
+	const m = configuredOf(d)
+	if (!m) {
+		use(d)
+		return
+	}
+	edit(m)
+	form.value.ip = d.ip
+}
 function use(d) {
 	if (d.id !== form.value.id) {
 		form.value.key = ''
@@ -434,7 +449,9 @@ async function test() {
 	savedMsg.value = null
 	const sig = signature.value
 	try {
-		testResult.value = await meterCall('test', meterParams())
+		// meter.test takes no name (only meter.save does)
+		const { name, ...testArgs } = meterParams()
+		testResult.value = await meterCall('test', testArgs)
 		testedWith.value = sig
 	} catch (e) {
 		testResult.value = { ok: false, error: i18n.t('plugins.WorkshopPower.meterConfig.no_response') + (e.message || e) }

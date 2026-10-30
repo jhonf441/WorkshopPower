@@ -92,12 +92,13 @@
 							<div
 								v-for="d in found" :key="d.ip + d.id"
 								class="encontrado" :class="{ 'found-sel': form.id === d.id }"
-								@click="use(d)"
+								@click="pickFound(d)"
 							>
 								<v-icon small class="mr-2">mdi-wifi</v-icon>
 								<span class="text-body-2">{{ d.ip }}</span>
 								<span class="text-caption grey--text ml-2 meter-data">{{ d.id }} &middot; v{{ d.version || '?' }}</span>
-								<v-chip v-if="d.current" x-small class="ml-2" color="success" text-color="white">{{ $t('plugins.WorkshopPower.meterConfig.in_use') }}</v-chip>
+								<v-chip v-if="configuredOf(d)" x-small class="ml-2" color="success" text-color="white">{{ $t('plugins.WorkshopPower.meterConfig.already_configured', { name: configuredOf(d).name }) }}</v-chip>
+								<v-chip v-else-if="d.current" x-small class="ml-2" color="success" text-color="white">{{ $t('plugins.WorkshopPower.meterConfig.in_use') }}</v-chip>
 							</div>
 						</div>
 					</div>
@@ -427,6 +428,20 @@ export default {
 				this.searching = false;
 			}
 		},
+		// a found device that is already one of the configured meters (same ID)
+		configuredOf(d) {
+			return this.meters.find(m => m.id === d.id) || null;
+		},
+		// a configured one opens its own card (with the IP the search saw); a new one fills the editor
+		pickFound(d) {
+			const m = this.configuredOf(d);
+			if (!m) {
+				this.use(d);
+				return;
+			}
+			this.edit(m);
+			this.form.ip = d.ip;
+		},
 		use(d) {
 			if (d.id !== this.form.id) {
 				this.form.key = '';
@@ -443,7 +458,9 @@ export default {
 			this.savedMsg = null;
 			const signature = this.signature;
 			try {
-				this.testResult = await this.m9003('test', this.params());
+				// meter.test takes no name (only meter.save does)
+				const { name, ...testArgs } = this.params();
+				this.testResult = await this.m9003('test', testArgs);
 				this.testedWith = signature;
 			} catch (e) {
 				this.testResult = { ok: false, error: i18n.t('plugins.WorkshopPower.meterConfig.no_response') + (e.message || e) };
