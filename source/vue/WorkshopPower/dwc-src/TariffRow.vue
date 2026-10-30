@@ -54,7 +54,7 @@ const props = defineProps({
 const emit = defineEmits(['saved'])
 
 const { atLeast } = useRole()
-const currencies = ['USD', 'EUR', 'COP', 'MXN', 'ARS', 'CLP', 'PEN', 'BRL'] // choices only: the currency comes from the machine profile / the saved rate
+const currencies = ['ARS', 'BRL', 'CLP', 'COP', 'EUR', 'MXN', 'PEN', 'USD'] // choices only: the currency comes from the machine profile / the saved rate
 const currency = ref(props.tariff.currency)
 const value = ref(props.tariff.value_kwh ? String(props.tariff.value_kwh) : '')
 const open = ref(false)

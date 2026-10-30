@@ -22,10 +22,10 @@ export function fmtKwh(v) {
 	return v < 0.1 && v > 0 ? v.toFixed(3) : v.toFixed(2);
 }
 
-// "$ 1,234 COP" for an energy in kWh with the tariff { currency, value_kwh }; null when there is no tariff or no value
+// "1,234 COP" / "12.50 EUR" for an energy in kWh with the tariff { currency, value_kwh } (no currency sign of its own: the code is the currency); null when there is no tariff or no value
 export function costText(kwh, tariff, locale) {
 	if (kwh == null || isNaN(kwh) || !tariff || !tariff.value_kwh) {
 		return null;
 	}
-	return `$ ${formatMoney(kwh * tariff.value_kwh, tariff.currency, locale)} ${tariff.currency}`;
+	return `${formatMoney(kwh * tariff.value_kwh, tariff.currency, locale)} ${tariff.currency}`.trim();
 }

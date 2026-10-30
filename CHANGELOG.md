@@ -1,5 +1,9 @@
 # WorkshopPower -- historial de versiones
 
+## 2.7.6 -- 2026-10-30
+
+- Manifest: sbcRequired true (needs WorkshopService); side bar keeps the group names
+
 ## 2.7.5 -- 2026-10-30
 
 - Job list: no program-name rewriting
