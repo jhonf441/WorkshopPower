@@ -1,5 +1,21 @@
 # WorkshopPower -- historial de versiones
 
+## 2.7.14 -- 2026-10-31
+
+- Consumption: icon with the loading text in the energy-per-period card
+
+## 2.7.13 -- 2026-10-31
+
+- Lot 2: one relay client, camera client folder, single gallery, one presence helper, shared resources released at the last plugin, flash for the operator
+
+## 2.7.12 -- 2026-10-31
+
+- Hides what names a plugin that is absent; a plugin is active only by the machine list
+
+## 2.7.11 -- 2026-10-31
+
+- Merged work: config write path, exchange standard, review fixes
+
 ## 2.7.10 -- 2026-10-30
 
 - The temperature chart no longer fails in DWC 3.6 (zoom plugin); the side bar scrolls inside when it is taller than the window

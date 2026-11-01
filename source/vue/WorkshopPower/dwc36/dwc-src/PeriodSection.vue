@@ -61,8 +61,9 @@
 				:average="stats ? stats.average : null"
 				class="mt-2"
 			/>
-			<div v-else class="text-caption grey--text text-center py-8">
-				{{ periodLoading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_data_for_this_period') }}
+			<div v-else class="period-empty">
+				<v-icon large color="grey" aria-hidden="true">mdi-chart-bar</v-icon>
+				<div class="text-body-2">{{ periodLoading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_data_for_this_period') }}</div>
 			</div>
 			<div class="text-caption grey--text mt-1">
 				{{ $t('plugins.WorkshopPower.consumption.tap_a_bar_hint', { prev: textPrevious }) }}
@@ -76,8 +77,8 @@ import { api } from './workshop-api.js'
 import ConsumptionBars from './ConsumptionBars.vue'
 import { fmtKwh, costText } from './money.js'
 import { asDateLocal } from './dates.js'
-import { periodCsv } from './job-insights.js'
-import { downloadText } from './download.js'
+import { periodTable } from './job-insights.js'
+import { exchangeExportCsv } from './data-exchange-ui.js'
 
 function sumKwh(buckets, until) {
 	let s = 0
@@ -260,7 +261,8 @@ export default {
 		},
 		exportCsv() {
 			if (!this.periodData || !this.periodData.buckets) return
-			downloadText('workshop-power-' + this.periodTab + '.csv', periodCsv(this.periodData.buckets, { period: this.t('csv_period'), kwh: this.t('csv_kwh'), cost: this.t('csv_cost') }, this.tariff.value_kwh))
+			const table = periodTable(this.periodData.buckets, this.tariff.value_kwh)
+			exchangeExportCsv('workshop-power-' + this.periodTab, table.columns, table.rows)
 		}
 	}
 }
@@ -274,6 +276,14 @@ export default {
 .period-label {
 	min-width: 90px;
 	text-align: center;
+}
+.period-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	text-align: center;
+	padding: 24px 8px;
 }
 .period-summary {
 	display: flex;

@@ -1,5 +1,5 @@
 // job-insights.js -- pure logic of the job view of WorkshopPower: filters, order, energy per process, comparison with similar jobs,
-// CSV, idle (standby) consumption, the running job and the monthly budget. No Vue and no texts (labels come in as arguments), so it is
+// the CSV tables, idle (standby) consumption, the running job and the monthly budget. No Vue and no texts, so it is
 // the same file on both DWC lines and testable with node --test (vue/WorkshopPower/test/job-insights.test.js).
 
 'use strict'
@@ -110,47 +110,31 @@ export function compareJob(t, jobs) {
 	}
 }
 
-// ---- CSV ------------------------------------------------------------------------------------------
+// ---- CSV tables --------------------------------------------------------------------------------------
+// The tables of the two CSV exports. The file itself (layout, quoting, byte order mark, name) is written by the shared exchange module
+// (exchangeExportCsv, docs-internal/DATA-EXCHANGE.md): the column keys are fixed and never translated.
 
-// One field: quotes when needed; a text that a spreadsheet would run as a formula gets a leading apostrophe.
-export function csvField(v) {
-	if (v == null) return ''
-	let s = String(v)
-	if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = "'" + s
-	return /[",\n\r;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
-}
+export const JOBS_CSV_COLUMNS = ['start', 'end', 'name', 'mode', 'zone', 'material', 'duration_s', 'kwh', 'avg_w', 'cost', 'origin', 'cancelled', 'file']
 
-export function csv(rows) {
-	return rows.map(r => r.map(csvField).join(',')).join('\r\n') + '\r\n'
-}
-
-function iso(ms) {
-	const d = new Date(ms)
-	const p = n => String(n).padStart(2, '0')
-	return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
-}
-
-// labels: { start, end, name, mode, zone, material, duration_s, kwh, avg_w, cost, origin, cancelled, file, yes, no }
 // rate: price per kWh (0 or missing = no cost column value)
-export function jobsCsv(jobs, labels, rate) {
-	const L = labels || {}
-	const head = ['start', 'end', 'name', 'mode', 'zone', 'material', 'duration_s', 'kwh', 'avg_w', 'cost', 'origin', 'cancelled', 'file'].map(k => L[k] || k)
+export function jobsTable(jobs, rate) {
 	const rows = (jobs || []).map(t => {
 		const w = avgW(t)
 		return [
-			t.durationS > 0 ? iso(t.start) : '', iso(t.end), t.name, t.mode || '', t.zone || '', t.material || '', Math.round(t.durationS || 0),
-			t.kwh != null ? Number(t.kwh.toFixed(4)) : '', w != null ? Math.round(w) : '',
-			t.kwh != null && rate ? Number((t.kwh * rate).toFixed(2)) : '', t.origin || '', t.cancelled ? (L.yes || 'yes') : (L.no || 'no'), t.file || ''
+			t.durationS > 0 ? new Date(t.start) : null, new Date(t.end), t.name, t.mode || '', t.zone || '', t.material || '', Math.round(t.durationS || 0),
+			t.kwh != null ? Number(t.kwh.toFixed(4)) : null, w != null ? Math.round(w) : null,
+			t.kwh != null && rate ? Number((t.kwh * rate).toFixed(2)) : null, t.origin || '', !!t.cancelled, t.file || ''
 		]
 	})
-	return csv([head].concat(rows))
+	return { columns: JOBS_CSV_COLUMNS, rows }
 }
 
-// buckets of energy.period: [{ label, tooltip, kwh }]
-export function periodCsv(buckets, labels, rate) {
-	const L = labels || {}
-	const rows = (buckets || []).map(b => [b.tooltip || b.label, b.kwh != null ? Number(b.kwh.toFixed(4)) : '', b.kwh != null && rate ? Number((b.kwh * rate).toFixed(2)) : ''])
-	return csv([[L.period || 'period', L.kwh || 'kwh', L.cost || 'cost']].concat(rows))
+export const PERIOD_CSV_COLUMNS = ['period', 'kwh', 'cost']
+
+// buckets of energy.period: [{ label, tooltip, kwh }]; the period is the text the service gives it
+export function periodTable(buckets, rate) {
+	const rows = (buckets || []).map(b => [b.tooltip || b.label, b.kwh != null ? Number(b.kwh.toFixed(4)) : null, b.kwh != null && rate ? Number((b.kwh * rate).toFixed(2)) : null])
+	return { columns: PERIOD_CSV_COLUMNS, rows }
 }
 
 // ---- idle (standby) consumption ----------------------------------------------------------------------

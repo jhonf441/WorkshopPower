@@ -83,7 +83,7 @@ import { fmtKwh, costText } from './money.js'
 import * as jobsLib from './jobs.js'
 import * as ins from './job-insights.js'
 import { buildJobs, dayGroups } from './job-list.js'
-import { downloadText } from './download.js'
+import { exchangeExportCsv } from './data-exchange-ui.js'
 
 const LIMIT = 8 // jobs shown before "see all"
 const NONE = '__none' // the buttons of a group cannot carry an empty value: the jobs without a mode use this one
@@ -182,9 +182,8 @@ async function loadPower(job) {
 	powers.value[job.key] = res
 }
 function exportCsv() {
-	const labels = {}
-	;['start', 'end', 'name', 'mode', 'zone', 'material', 'duration_s', 'kwh', 'avg_w', 'cost', 'origin', 'cancelled', 'file', 'yes', 'no'].forEach(k => { labels[k] = t('csv_' + k) })
-	downloadText('workshop-power-jobs.csv', ins.jobsCsv(sorted.value, labels, props.tariff.value_kwh))
+	const table = ins.jobsTable(sorted.value, props.tariff.value_kwh)
+	exchangeExportCsv('workshop-power-jobs', table.columns, table.rows)
 }
 </script>
 

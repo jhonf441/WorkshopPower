@@ -61,8 +61,9 @@
 				:average="stats ? stats.average : null"
 				class="mt-2"
 			/>
-			<div v-else class="text-body-small text-medium-emphasis text-center py-8">
-				{{ periodLoading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_data_for_this_period') }}
+			<div v-else class="period-empty">
+				<v-icon size="large" color="grey" aria-hidden="true">mdi-chart-bar</v-icon>
+				<div class="text-body-medium">{{ periodLoading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_data_for_this_period') }}</div>
 			</div>
 			<div class="text-body-small text-medium-emphasis mt-1">
 				{{ $t('plugins.WorkshopPower.consumption.tap_a_bar_hint', { prev: textPrevious }) }}
@@ -78,8 +79,8 @@ import { api } from './workshop-api.js'
 import ConsumptionBars from './ConsumptionBars.vue'
 import { fmtKwh, costText } from './money.js'
 import { asDateLocal } from './dates.js'
-import { periodCsv } from './job-insights.js'
-import { downloadText } from './download.js'
+import { periodTable } from './job-insights.js'
+import { exchangeExportCsv } from './data-exchange-ui.js'
 
 const props = defineProps({
 	tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
@@ -256,7 +257,8 @@ async function loadPeriod(quiet) {
 }
 function exportCsv() {
 	if (!periodData.value || !periodData.value.buckets) return
-	downloadText('workshop-power-' + periodTab.value + '.csv', periodCsv(periodData.value.buckets, { period: t('csv_period'), kwh: t('csv_kwh'), cost: t('csv_cost') }, props.tariff.value_kwh))
+	const table = periodTable(periodData.value.buckets, props.tariff.value_kwh)
+	exchangeExportCsv('workshop-power-' + periodTab.value, table.columns, table.rows)
 }
 </script>
 
@@ -268,6 +270,14 @@ function exportCsv() {
 .period-label {
 	min-width: 90px;
 	text-align: center;
+}
+.period-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	text-align: center;
+	padding: 24px 8px;
 }
 .period-summary {
 	display: flex;
