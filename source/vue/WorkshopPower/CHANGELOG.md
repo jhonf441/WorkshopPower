@@ -1,5 +1,13 @@
 # WorkshopPower -- historial de versiones
 
+## 2.7.15 -- 2026-11-03
+
+- Jobs grouped by machine mode (CNC, laser, FFF) with totals per group
+
+## Unreleased
+
+- Jobs (DWC 3.6): group the finished jobs by machine mode (CNC, Laser, FFF (3D), Unknown) with count, energy, cost and average per job per group plus a grand total; groups fold and the choice is remembered in the browser; the mode filter now uses the same groups; help for the new controls
+
 ## 2.7.14 -- 2026-10-31
 
 - Consumption: icon with the loading text in the energy-per-period card

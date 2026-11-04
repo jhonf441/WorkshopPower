@@ -22,7 +22,7 @@
 					</v-btn-toggle>
 					<v-btn-toggle v-if="modeButtons.length > 1" v-model="mode" mandatory dense color="primary" class="jobs-modes">
 						<v-btn small value="all">{{ $t('plugins.WorkshopPower.consumption.filter_all') }}</v-btn>
-						<v-btn v-for="m in modeButtons" :key="m" small :value="m">{{ m === NONE ? $t('plugins.WorkshopPower.consumption.filter_no_mode') : m }}</v-btn>
+						<v-btn v-for="m in modeButtons" :key="m" small :value="m">{{ groupName(m) }}</v-btn>
 					</v-btn-toggle>
 				</div>
 				<div class="jobs-filters mt-2">
@@ -30,7 +30,20 @@
 						v-model="sort" :items="sortItems" :label="$t('plugins.WorkshopPower.consumption.sort_label')"
 						dense outlined hide-details class="jobs-sort"
 					/>
+					<v-btn-toggle v-model="grouping" mandatory dense color="primary" class="jobs-grouping" :aria-label="t('group_label')">
+						<v-btn small value="none">{{ t('group_none') }}</v-btn>
+						<v-btn small value="mode">{{ t('group_mode') }}</v-btn>
+					</v-btn-toggle>
 					<v-checkbox v-model="hideCancelled" dense hide-details class="mt-0 pt-0" :label="$t('plugins.WorkshopPower.consumption.hide_cancelled')" />
+				</div>
+
+				<div class="mt-2">
+					<v-btn small text class="px-1" :aria-expanded="helpOpen ? 'true' : 'false'" @click="helpOpen = !helpOpen">
+						<v-icon small left aria-hidden="true">mdi-help-circle-outline</v-icon>{{ t('group_help_btn') }}
+					</v-btn>
+					<ul v-if="helpOpen" class="jobs-help text-body-2">
+						<li v-for="k in ['what', 'for', 'missing', 'how']" :key="k">{{ t('group_help_' + k) }}</li>
+					</ul>
 				</div>
 
 				<job-summary v-if="filtered.length" :totals="sums" :breakdown="breakdown" :tariff="tariff" class="mt-3" />
@@ -39,7 +52,38 @@
 
 		<v-card class="mb-3">
 			<v-card-text>
-				<template v-if="filtered.length">
+				<template v-if="filtered.length && grouping === 'mode'">
+					<section v-for="g in modeGroups" :key="g.id" class="mode-group" :data-group="g.id">
+						<div
+							class="mode-head" role="button" tabindex="0" :aria-expanded="isCollapsed(g.id) ? 'false' : 'true'"
+							:aria-label="$t('plugins.WorkshopPower.consumption.group_toggle', { name: groupName(g.id) })"
+							@click="toggleGroup(g.id)" @keydown.enter.prevent="toggleGroup(g.id)" @keydown.space.prevent="toggleGroup(g.id)"
+						>
+							<v-icon small aria-hidden="true">{{ isCollapsed(g.id) ? 'mdi-chevron-right' : 'mdi-chevron-down' }}</v-icon>
+							<span class="mode-dot" :style="{ background: dotOf(g.id) }" aria-hidden="true" />
+							<span class="mode-name">{{ groupName(g.id) }}</span>
+							<span class="mode-figures">
+								{{ $t('plugins.WorkshopPower.consumption.n_jobs', { n: g.n }) }} &middot; {{ fmtKwh(g.kwh) }} kWh<span v-if="costOf(g.kwh)"> &middot; {{ costOf(g.kwh) }}</span>
+							</span>
+							<span class="mode-avg">{{ $t('plugins.WorkshopPower.consumption.group_avg', { kwh: fmtKwh(g.avgKwh) }) }}<span v-if="costOf(g.avgKwh)"> &middot; {{ costOf(g.avgKwh) }}</span></span>
+						</div>
+						<div v-if="!isCollapsed(g.id)" class="mode-body">
+							<job-item
+								v-for="t in g.items" :key="t.key" :job="t" :expanded="!!open[t.key]" :power="powers[t.key] || null"
+								:compare="compareOf(t)" :tariff="tariff" :max-kwh="maxKwh" @toggle="toggleJob(t)"
+							/>
+						</div>
+					</section>
+					<div class="mode-head mode-total">
+						<span class="mode-name">{{ t('group_total') }}</span>
+						<span class="mode-figures">
+							{{ $t('plugins.WorkshopPower.consumption.n_jobs', { n: grand.n }) }} &middot; {{ fmtKwh(grand.kwh) }} kWh<span v-if="costOf(grand.kwh)"> &middot; {{ costOf(grand.kwh) }}</span>
+						</span>
+						<span class="mode-avg">{{ $t('plugins.WorkshopPower.consumption.group_avg', { kwh: fmtKwh(grand.avgKwh) }) }}<span v-if="costOf(grand.avgKwh)"> &middot; {{ costOf(grand.avgKwh) }}</span></span>
+					</div>
+					<div class="text-caption grey--text mt-1">{{ t('job_tap_hint') }} {{ t('units_hint') }}</div>
+				</template>
+				<template v-else-if="filtered.length">
 					<template v-for="g in groups">
 						<!-- more than 8 jobs, newest first: one header per day with the totals of that day -->
 						<div v-if="g.day" :key="'d' + g.day" class="job-day">
@@ -81,10 +125,13 @@ import { fmtKwh, costText } from './money.js'
 import * as jobsLib from './jobs.js'
 import * as ins from './job-insights.js'
 import { buildJobs, dayGroups } from './job-list.js'
+import { groupJobs, grandTotal, filterByGroup } from './job-groups.js'
+import { loadGrouping, saveGrouping, loadCollapsed, saveCollapsed } from './job-groups-store.js'
+import { colorMode } from './colors.js'
+import { MODE_NAMES } from './machine-modes.js'
 import { exchangeExportCsv } from './data-exchange-ui.js'
 
 const LIMIT = 8 // jobs shown before "see all"
-const NONE = '__none' // the buttons of a group cannot carry an empty value: the jobs without a mode use this one
 
 export default {
 	components: { RunningJob, JobSummary, JobItem },
@@ -98,11 +145,13 @@ export default {
 	data() {
 		return {
 			LIMIT,
-			NONE,
 			jobs: [],
 			loading: false,
 			days: 30,
-			mode: 'all',
+			mode: 'all', // 'all' or a group id of job-groups.js (cnc, laser, fff, unknown)
+			grouping: loadGrouping(), // 'none' | 'mode', remembered in this browser
+			collapsed: loadCollapsed(), // ids of the folded groups, remembered in this browser
+			helpOpen: false,
 			hideCancelled: false,
 			sort: 'recent',
 			showAll: false,
@@ -115,10 +164,16 @@ export default {
 			return ['recent', 'energy', 'duration', 'power'].map(k => ({ text: this.t('sort_' + k), value: k }))
 		},
 		modeButtons() {
-			return ins.modesOf(this.jobs).map(m => m || NONE)
+			return groupJobs(this.jobs).map(g => g.id)
 		},
 		filtered() {
-			return ins.filterJobs(this.jobs, { days: this.days, mode: this.mode === NONE ? ins.NO_MODE : this.mode, hideCancelled: this.hideCancelled })
+			return filterByGroup(ins.filterJobs(this.jobs, { days: this.days, hideCancelled: this.hideCancelled }), this.mode)
+		},
+		modeGroups() {
+			return groupJobs(this.sorted)
+		},
+		grand() {
+			return grandTotal(this.filtered)
 		},
 		sorted() {
 			return ins.sortJobs(this.filtered, this.sort)
@@ -145,6 +200,9 @@ export default {
 		modeButtons(list) {
 			if (this.mode !== 'all' && !list.includes(this.mode)) this.mode = 'all'
 		},
+		grouping(v) {
+			saveGrouping(v)
+		},
 		meter() {
 			this.powers = {}
 			this.jobs.filter(j => this.open[j.key]).forEach(j => this.loadPower(j))
@@ -157,6 +215,20 @@ export default {
 		fmtKwh,
 		t(k) {
 			return this.$t('plugins.WorkshopPower.consumption.' + k)
+		},
+		groupName(id) {
+			return this.t('group_' + id)
+		},
+		// the dot of a group: the color the mode has in Lights (colorMode); unknown has none
+		dotOf(id) {
+			return MODE_NAMES[id] ? colorMode(this.$store, MODE_NAMES[id]) : 'var(--tp-faint, #9e9e9e)'
+		},
+		isCollapsed(id) {
+			return this.collapsed.includes(id)
+		},
+		toggleGroup(id) {
+			this.collapsed = this.isCollapsed(id) ? this.collapsed.filter(x => x !== id) : this.collapsed.concat(id)
+			saveCollapsed(this.collapsed)
 		},
 		costOf(kwh) {
 			return costText(kwh, this.tariff, this.$i18n.locale)
@@ -236,6 +308,57 @@ export default {
 .jobs-modes {
 	flex-wrap: wrap;
 	height: auto;
+}
+.jobs-grouping {
+	flex-wrap: wrap;
+	height: auto;
+}
+.jobs-help {
+	margin: 4px 0 0;
+	padding-left: 20px;
+	color: var(--tp-faint, #9e9e9e);
+}
+.mode-group {
+	margin-bottom: 8px;
+}
+.mode-head {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 4px 10px;
+	min-height: 44px;
+	padding: 6px 4px;
+	border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+	cursor: pointer;
+}
+.mode-total {
+	cursor: default;
+	font-weight: 600;
+	border-bottom: 0;
+	border-top: 2px solid rgba(128, 128, 128, 0.35);
+}
+.mode-dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	flex: none;
+}
+.mode-name {
+	font-weight: 600;
+}
+.mode-figures {
+	font-variant-numeric: tabular-nums;
+	margin-left: auto;
+}
+.mode-avg {
+	flex-basis: 100%;
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--tp-faint, #9e9e9e);
+	padding-left: 24px;
+}
+.mode-total .mode-avg {
+	padding-left: 0;
 }
 .jobs-sort {
 	max-width: 220px;
