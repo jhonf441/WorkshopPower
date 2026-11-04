@@ -1,5 +1,17 @@
 # WorkshopPower -- historial de versiones
 
+## 2.7.20 -- 2026-11-04
+
+- ErrorNotice: no second sign-in notice (the page bar chip says it)
+
+## 2.7.19 -- 2026-11-04
+
+- Start-up card locked without a session; shared help tip; session chip class
+
+## 2.7.18 -- 2026-11-04
+
+- Signed out: sign-in refusals stay visible and the notice blinks on tab clicks (shared session notice); Power says it needs a sign-in
+
 ## 2.7.17 -- 2026-11-03
 
 - Power: live job note shows the M118 form of the bridge lines

@@ -4,7 +4,7 @@
 		<div class="meter-current">
 			<v-icon :color="live ? 'success' : 'grey'" class="mr-2" aria-hidden="true">mdi-meter-electric-outline</v-icon>
 			<div class="flex-grow-1 text-body-2" :class="!meters.length && queried ? 'warning--text' : ''">
-				{{ querying ? $t('plugins.WorkshopPower.meterConfig.querying') : meters.length ? (meters.length === 1 ? $t('plugins.WorkshopPower.meterConfig.one_meter') : $t('plugins.WorkshopPower.meterConfig.n_meters', { n: meters.length })) : (queried ? $t('plugins.WorkshopPower.meterConfig.no_meter_is_configured_add_one') : $t('plugins.WorkshopPower.meterConfig.couldn_t_query_the_meter')) }}
+				{{ querying ? $t('plugins.WorkshopPower.meterConfig.querying') : meters.length ? (meters.length === 1 ? $t('plugins.WorkshopPower.meterConfig.one_meter') : $t('plugins.WorkshopPower.meterConfig.n_meters', { n: meters.length })) : (queried ? $t('plugins.WorkshopPower.meterConfig.no_meter_is_configured_add_one') : $t(signedOutNow ? 'plugins.WorkshopPower.meterConfig.sign_in_to_query_the_meter' : 'plugins.WorkshopPower.meterConfig.couldn_t_query_the_meter')) }}
 			</div>
 			<v-btn small color="primary" outlined :disabled="open && isNew" @click="newMeter()"><v-icon small left>mdi-plus</v-icon>{{ $t('plugins.WorkshopPower.meterConfig.add_meter') }}</v-btn>
 		</div>
@@ -219,6 +219,8 @@ import i18n from '../../i18n'
 
 import { mapActions } from 'vuex'
 import { api } from './workshop-api.js'
+import { roleMixin } from './role-mixin.js' // vue/_shared
+import { signedOut } from './workshop-auth.js' // vue/_shared
 import { pluginOf } from './workshop-ids.js' // Id nuevo o viejo del plugin
 import { dataOf } from './plugin-data.js'
 import MeterCard from './MeterCard.vue'
@@ -226,6 +228,7 @@ import MeterHealth from './MeterHealth.vue'
 
 export default {
 	components: { MeterCard, MeterHealth },
+	mixins: [roleMixin],
 	props: {
 		live: { type: Boolean, default: false },
 		openEditor: { type: Boolean, default: false }
@@ -260,6 +263,10 @@ export default {
 		};
 	},
 	computed: {
+		signedOutNow() {
+			void this.identityTick;
+			return signedOut();
+		},
 		currentSel() {
 			return this.meters.find(m => m.key === this.sel) || null;
 		},
@@ -295,6 +302,12 @@ export default {
 		}
 	},
 	watch: {
+		// the person signed in after the page opened: ask again, the first answer was a refusal
+		signedOutNow(out) {
+			if (!out && !this.queried) {
+				this.query();
+			}
+		},
 		openEditor(v) {
 			if (v) {
 				this.open = true;

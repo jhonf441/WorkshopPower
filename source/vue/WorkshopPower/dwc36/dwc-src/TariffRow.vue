@@ -5,7 +5,7 @@
 			<span v-if="tariff.value_kwh" class="text-body-2">
 				{{ $t('plugins.WorkshopPower.consumption.rate') }} <b>{{ money(tariff.value_kwh) }} {{ tariff.currency }}</b> {{ $t('plugins.WorkshopPower.consumption.per_kwh') }}
 			</span>
-			<span v-else class="text-body-2 warning--text">{{ $t(canChange ? 'plugins.WorkshopPower.consumption.no_rate_enter_the_kwh_cost' : 'plugins.WorkshopPower.consumption.no_rate_ask_technician') }}</span>
+			<span v-else class="text-body-2 warning--text">{{ $t(signedOutNow ? 'plugins.WorkshopPower.consumption.sign_in_to_see_the_rate' : canChange ? 'plugins.WorkshopPower.consumption.no_rate_enter_the_kwh_cost' : 'plugins.WorkshopPower.consumption.no_rate_ask_technician') }}</span>
 			<v-btn v-if="canChange" x-small text color="primary" class="ml-1" @click="open = !open">
 				{{ open ? $t('plugins.WorkshopPower.consumption.close') : $t('plugins.WorkshopPower.consumption.change') }}
 			</v-btn>
@@ -44,6 +44,7 @@
 import ErrorNotice from './ErrorNotice.vue' // vue/_shared
 import { api } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js' // vue/_shared
+import { signedOut } from './workshop-auth.js' // vue/_shared
 import { formatMoney } from './money.js'
 
 export default {
@@ -63,6 +64,10 @@ export default {
 		};
 	},
 	computed: {
+		signedOutNow() {
+			void this.identityTick;
+			return signedOut();
+		},
 		canChange() {
 			return this.atLeast('technician');
 		}
