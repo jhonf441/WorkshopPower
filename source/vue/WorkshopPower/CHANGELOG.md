@@ -1,5 +1,13 @@
 # WorkshopPower -- historial de versiones
 
+## 2.7.17 -- 2026-11-03
+
+- Power: live job note shows the M118 form of the bridge lines
+
+## 2.7.16 -- 2026-11-03
+
+- Session: standard login notice (shared ErrorNotice)
+
 ## 2.7.15 -- 2026-11-03
 
 - Jobs grouped by machine mode (CNC, laser, FFF) with totals per group
