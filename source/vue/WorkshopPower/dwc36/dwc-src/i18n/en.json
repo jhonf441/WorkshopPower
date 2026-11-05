@@ -115,7 +115,6 @@
 		"group_total": "Total",
 		"group_avg": "average {kwh} kWh per job",
 		"group_toggle": "Show or hide the jobs of {name}",
-		"group_help_btn": "What is this?",
 		"group_help_what": "What it is: the list of finished jobs can be split by the machine mode: CNC, Laser or FFF (3D). Each group shows its jobs, energy, cost and the average per job.",
 		"group_help_for": "What for: to see which process uses the most energy and what a typical job costs in each.",
 		"group_help_missing": "If a mode is missing: it has no finished job in these days, or the job was logged without a mode (it goes to Unknown; nothing is guessed).",

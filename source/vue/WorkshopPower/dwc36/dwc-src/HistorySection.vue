@@ -38,7 +38,16 @@
 			</div>
 
 			<template v-if="serial.length > 1">
-				<div class="text-caption grey--text mt-3 mb-1">{{ $t('plugins.WorkshopPower.consumption.power_w') }}</div>
+				<div class="text-caption grey--text mt-3 mb-1 d-flex align-center" style="gap:4px">
+					{{ $t('plugins.WorkshopPower.consumption.power_w') }}
+					<help-tip :title="$t('plugins.WorkshopPower.consumption.detailed_history')">
+						<p class="text-body-2 mb-0">
+							{{ $t('plugins.WorkshopPower.consumption.gaps_in_the_line_are_periods') }}
+							<span v-if="serialStepS">{{ $t('plugins.WorkshopPower.consumption.long_range_averaged_every', { minutes: serialStepMin }) }}</span>
+							{{ $t('plugins.WorkshopPower.consumption.wheel_or_pinch_to_zoom') }}
+						</p>
+					</help-tip>
+				</div>
 				<detail-chart
 					:history="serialPower"
 					color="#FFB300" unit="W" :label="$t('plugins.WorkshopPower.consumption.power')"
@@ -55,14 +64,6 @@
 						<detail-chart :history="serialCurrent" color="#66BB6A" unit="A" :label="$t('plugins.WorkshopPower.consumption.current')" :height="160" />
 					</v-col>
 				</v-row>
-				<details class="wf-more">
-					<summary>{{ $t('plugins.WorkshopPower.common.how_it_works') }}</summary>
-					<p>
-						{{ $t('plugins.WorkshopPower.consumption.gaps_in_the_line_are_periods') }}
-						<span v-if="serialStepS">{{ $t('plugins.WorkshopPower.consumption.long_range_averaged_every', { minutes: serialStepMin }) }}</span>
-						{{ $t('plugins.WorkshopPower.consumption.wheel_or_pinch_to_zoom') }}
-					</p>
-				</details>
 				<div v-if="idle" class="text-caption grey--text mt-1">{{ $t('plugins.WorkshopPower.consumption.idle_hint') }}</div>
 			</template>
 			<div v-else class="history-empty">
@@ -80,6 +81,7 @@ import { isRefusal } from './session-note.js'
 import { refusalNow } from './session-now.js' // a refusal told by its cause
 import DetailChart from './DetailChart.vue'
 import RangePicker from './RangePicker.vue' // vue/_shared36
+import HelpTip from './HelpTip.vue' // vue/_shared36
 import { relative, resolve, asTexts } from './range-picker.js' // vue/_shared36
 import { fmtKwh, costText } from './money.js'
 import { asDateHourLocal } from './dates.js'
@@ -92,7 +94,7 @@ const GAP_MS = 3 * 60 * 1000
 
 export default {
 	mixins: [roleMixin],
-	components: { DetailChart, RangePicker },
+	components: { DetailChart, RangePicker, HelpTip },
 	props: {
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
 		meter: { type: String, default: '' }

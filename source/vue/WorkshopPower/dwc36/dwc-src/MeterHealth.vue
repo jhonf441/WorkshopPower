@@ -5,6 +5,7 @@
 			<v-icon small :color="healthState.color" aria-hidden="true">{{ healthState.icon }}</v-icon>
 			<span class="text-body-2 font-weight-medium">{{ $t('plugins.WorkshopPower.meterConfig.meter_health', { state: healthState.text }) }}</span>
 			<span class="text-caption grey--text">{{ healthState.detail }}</span>
+			<help-tip :title="$t('plugins.WorkshopPower.meterConfig.meter_health', { state: healthState.text })">{{ $t('plugins.WorkshopPower.meterConfig.the_meter_answers_over_wifi_and') }}</help-tip>
 		</div>
 		<div class="health-tiles mt-2">
 			<div class="health-tile">
@@ -32,10 +33,6 @@
 		<div v-if="health.error && health.age_error_s != null && health.age_error_s < 3600" class="text-caption mt-1 warning--text">
 			<v-icon x-small color="warning" aria-hidden="true">mdi-alert</v-icon> {{ $t('plugins.WorkshopPower.meterConfig.last_failure_at', { time: health.error_hour, error: health.error }) }}
 		</div>
-		<details class="wf-more">
-			<summary>{{ $t('plugins.WorkshopPower.common.how_it_works') }}</summary>
-			<p>{{ $t('plugins.WorkshopPower.meterConfig.the_meter_answers_over_wifi_and') }}</p>
-		</details>
 	</div>
 </template>
 
@@ -43,8 +40,10 @@
 import { pluginOf } from './workshop-ids.js' // Id nuevo o viejo del plugin
 import { dataOf } from './plugin-data.js'
 import { serviceTexts } from './service-text.js'
+import HelpTip from './HelpTip.vue' // vue/_shared36
 
 export default {
+	components: { HelpTip },
 	computed: {
 		health() {
 			const pl = pluginOf(this.$store.state.machine.model.plugins, 'service')

@@ -115,7 +115,6 @@
 		"group_total": "Total",
 		"group_avg": "promedio {kwh} kWh por trabajo",
 		"group_toggle": "Mostrar u ocultar los trabajos de {name}",
-		"group_help_btn": "¿Qué es esto?",
 		"group_help_what": "Qué es: la lista de trabajos terminados se puede separar por el modo de la máquina: CNC, Láser o FFF (3D). Cada grupo muestra sus trabajos, energía, costo y el promedio por trabajo.",
 		"group_help_for": "Para qué sirve: para ver qué proceso gasta más energía y cuánto cuesta un trabajo típico en cada uno.",
 		"group_help_missing": "Si falta un modo: no tiene trabajos terminados en estos días, o el trabajo se registró sin modo (va a Desconocido; no se adivina).",

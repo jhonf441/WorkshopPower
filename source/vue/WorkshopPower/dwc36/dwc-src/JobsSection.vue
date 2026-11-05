@@ -35,15 +35,9 @@
 						<v-btn small value="mode">{{ t('group_mode') }}</v-btn>
 					</v-btn-toggle>
 					<v-checkbox v-model="hideCancelled" dense hide-details class="mt-0 pt-0" :label="$t('plugins.WorkshopPower.consumption.hide_cancelled')" />
-				</div>
-
-				<div class="mt-2">
-					<v-btn small text class="px-1" :aria-expanded="helpOpen ? 'true' : 'false'" @click="helpOpen = !helpOpen">
-						<v-icon small left aria-hidden="true">mdi-help-circle-outline</v-icon>{{ t('group_help_btn') }}
-					</v-btn>
-					<ul v-if="helpOpen" class="jobs-help text-body-2">
-						<li v-for="k in ['what', 'for', 'missing', 'how']" :key="k">{{ t('group_help_' + k) }}</li>
-					</ul>
+					<help-tip :title="t('group_label')">
+						<p v-for="k in ['what', 'for', 'missing', 'how']" :key="k" class="text-body-2 mb-1">{{ t('group_help_' + k) }}</p>
+					</help-tip>
 				</div>
 
 				<job-summary v-if="filtered.length" :totals="sums" :breakdown="breakdown" :tariff="tariff" class="mt-3" />
@@ -124,6 +118,7 @@ import { refusalNow } from './session-now.js' // a refusal told by its cause
 import RunningJob from './RunningJob.vue'
 import JobSummary from './JobSummary.vue'
 import JobItem from './JobItem.vue'
+import HelpTip from './HelpTip.vue' // vue/_shared36
 import { fmtKwh, costText } from './money.js'
 import * as jobsLib from './jobs.js'
 import * as ins from './job-insights.js'
@@ -138,7 +133,7 @@ const LIMIT = 8 // jobs shown before "see all"
 
 export default {
 	mixins: [roleMixin],
-	components: { RunningJob, JobSummary, JobItem },
+	components: { RunningJob, JobSummary, JobItem, HelpTip },
 	props: {
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
 		meter: { type: String, default: '' }, // '' = the main meter, 'total' or the key of a meter
@@ -156,7 +151,6 @@ export default {
 			mode: 'all', // 'all' or a group id of job-groups.js (cnc, laser, fff, unknown)
 			grouping: loadGrouping(), // 'none' | 'mode', remembered in this browser
 			collapsed: loadCollapsed(), // ids of the folded groups, remembered in this browser
-			helpOpen: false,
 			hideCancelled: false,
 			sort: 'recent',
 			showAll: false,
@@ -327,11 +321,6 @@ export default {
 .jobs-grouping {
 	flex-wrap: wrap;
 	height: auto;
-}
-.jobs-help {
-	margin: 4px 0 0;
-	padding-left: 20px;
-	color: var(--tp-faint, #9e9e9e);
 }
 .mode-group {
 	margin-bottom: 8px;
