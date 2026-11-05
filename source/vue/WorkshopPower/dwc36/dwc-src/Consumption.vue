@@ -9,6 +9,8 @@
 			<side-tabs v-model="section" :items="sections" />
 			<div class="st-body">
 				<div v-if="section === 'summary'">
+					<!-- the tiles or the rate could not be read: the cause in a sentence (a refusal is the calm note of its cause), never silent zeros -->
+					<error-notice v-if="readError" :error="readError" retry @retry="loadSummaries(); loadTariff()" />
 					<!-- ===== Live reading + quick summary ===== -->
 					<live-summary
 						v-model="meterView" :state="liveState" :text="liveText" :has-data="!!consumptionCurrent" :view="view" :meters="listMeters"
@@ -19,7 +21,7 @@
 					<budget-card :limit="budgetLimit" :month-kwh="monthKwh" :projection="projection" :tariff="tariff" @update:limit="setBudget" />
 					<v-card class="mb-3">
 						<v-card-text class="pt-0">
-							<tariff-row :tariff="tariff" @saved="tariff = $event" />
+							<tariff-row :tariff="tariff" :read-failed="!!tariffError" @saved="tariff = $event; tariffError = null" />
 						</v-card-text>
 					</v-card>
 				</div>
@@ -73,10 +75,14 @@ import { asDateLocal } from './dates.js'
 import { runningJob, budgetState } from './job-insights.js' // tested in test/job-insights.test.js
 import { loadLimit, saveLimit } from './budget-store.js'
 import { sectionColor } from './section-colors.js' // the color of each section (--wf-sec)
+import ErrorNotice from './ErrorNotice.vue' // vue/_shared36
 
 export default {
 	mixins: [roleMixin],
-	components: { PageHeader, SideTabs, HiddenNote, ServiceNotice, StartupPanel, LiveSummary, RunningJob, BudgetCard, PeriodSection, JobsSection, HistorySection, MeterConfig, TariffRow },
+	// what the previous person read (the tiles, the rate) stays in no data of the page (ESTANDAR 3.1); onSessionChange reads it again
+	sessionData: ['todayData', 'monthData', 'tariff', 'tilesError', 'tariffError'],
+	sessionErrors: ['tilesError', 'tariffError'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
+	components: { ErrorNotice, PageHeader, SideTabs, HiddenNote, ServiceNotice, StartupPanel, LiveSummary, RunningJob, BudgetCard, PeriodSection, JobsSection, HistorySection, MeterConfig, TariffRow },
 	data() {
 		let medView = '';
 		try {
@@ -89,6 +95,8 @@ export default {
 			// tiles on top
 			todayData: null,
 			monthData: null,
+			tilesError: null, // the error of the last read of the tiles (today / month): said in a sentence, not swallowed
+			tariffError: null, // the same for the rate
 			// rate (API energy.rate_get / energy.rate_set, saved in the service's config)
 			tariff: { currency: '', value_kwh: 0 }, // empty until the service answers (profile currency or none; no fixed currency)
 			meterOpen: false,
@@ -126,6 +134,10 @@ export default {
 		},
 		sections() {
 			return visibleItems(this.allSections, op => this.canDo(op));
+		},
+		// the one error the summary tells (the tiles first): both reads usually fail for the same cause
+		readError() {
+			return this.tilesError || this.tariffError;
 		},
 		pluginModel() {
 			const plugins = this.$store.state.machine.model.plugins;
@@ -317,22 +329,25 @@ export default {
 		},
 		async loadSummaries() {
 			const today = new Date();
+			let failed = null;
 			try {
 				this.todayData = await api('energy.period', this.periodArgs(today, 'day'));
 			} catch (e) {
-				// the last value stays
+				failed = e; // the last value stays, and the page says why it is not new
 			}
 			try {
 				this.monthData = await api('energy.period', this.periodArgs(today, 'month'));
 			} catch (e) {
-				// idem
+				failed = failed || e;
 			}
+			this.tilesError = failed;
 		},
 		async loadTariff() {
 			try {
 				this.tariff = await api('energy.rate_get', {});
+				this.tariffError = null;
 			} catch (e) {
-				// no rate yet: the defaults remain (no currency, 0)
+				this.tariffError = e; // the defaults remain (no currency, 0) and the page says why
 			}
 		}
 	}

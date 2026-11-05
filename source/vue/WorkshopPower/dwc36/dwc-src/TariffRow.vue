@@ -5,12 +5,12 @@
 			<span v-if="tariff.value_kwh" class="text-body-2">
 				{{ $t('plugins.WorkshopPower.consumption.rate') }} <b>{{ money(tariff.value_kwh) }} {{ tariff.currency }}</b> {{ $t('plugins.WorkshopPower.consumption.per_kwh') }}
 			</span>
-			<span v-else class="text-body-2 warning--text">{{ $t(signedOutNow ? 'plugins.WorkshopPower.consumption.sign_in_to_see_the_rate' : canChange ? 'plugins.WorkshopPower.consumption.no_rate_enter_the_kwh_cost' : 'plugins.WorkshopPower.consumption.no_rate_ask_technician') }}</span>
+			<span v-else-if="!readFailed" class="text-body-2">{{ $t(canChange ? 'plugins.WorkshopPower.consumption.no_rate_enter_the_kwh_cost' : 'plugins.WorkshopPower.consumption.no_rate_ask_technician') }}</span>
 			<v-btn v-if="canChange" x-small text color="primary" class="ml-1" @click="open = !open">
 				{{ open ? $t('plugins.WorkshopPower.consumption.close') : $t('plugins.WorkshopPower.consumption.change') }}
 			</v-btn>
 			<!-- the editor is not drawn below technician: the reason is written where it would be (the "no rate" text already says it) -->
-			<span v-else-if="tariff.value_kwh" class="text-caption grey--text ml-2 lock-reason"><v-icon x-small left>mdi-lock-outline</v-icon>{{ lockText('technician') }}</span>
+			<lock-reason v-else-if="tariff.value_kwh" min="technician" class="ml-2" />
 		</div>
 		<v-expand-transition>
 			<div v-if="canChange" v-show="open">
@@ -29,8 +29,7 @@
 						<v-btn color="primary" small :loading="saving" @click="save()">{{ $t('plugins.WorkshopPower.consumption.save') }}</v-btn>
 					</v-col>
 				</v-row>
-				<div v-if="refusal" class="text-caption mt-2 lock-reason"><v-icon x-small left>mdi-lock-outline</v-icon>{{ refusal }}</div>
-				<error-notice v-else :error="error" retry class="mt-2" @retry="save()" />
+				<error-notice :error="error" retry class="mt-2" @retry="save()" />
 			</div>
 		</v-expand-transition>
 	</div>
@@ -47,15 +46,17 @@
 import ErrorNotice from './ErrorNotice.vue' // vue/_shared
 import { api } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js' // vue/_shared
-import { signedOut } from './workshop-auth.js' // vue/_shared
-import { refusalNow } from './session-now.js' // a refusal told by its cause
 import { formatMoney } from './money.js'
+import LockReason from './LockReason.vue' // vue/_shared36
 
 export default {
-	components: { ErrorNotice },
+	components: { LockReason, ErrorNotice },
 	mixins: [roleMixin],
+	sessionData: ['error', 'open'], // a refused save of the previous person is not shown to the next one
+	sessionErrors: ['error'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
 	props: {
-		tariff: { type: Object, required: true }
+		tariff: { type: Object, required: true },
+		readFailed: { type: Boolean, default: false } // the page could not read the rate: it says why, so this row does not say "no rate"
 	},
 	data() {
 		return {
@@ -68,17 +69,8 @@ export default {
 		};
 	},
 	computed: {
-		signedOutNow() {
-			void this.identityTick;
-			return signedOut();
-		},
 		canChange() {
 			return this.atLeast('technician');
-		},
-		// a refused save (expired session, role taken away) says why; ErrorNotice hides the 401 on purpose
-		refusal() {
-			void this.identityTick;
-			return refusalNow(this.error, 'technician');
 		}
 	},
 	watch: {

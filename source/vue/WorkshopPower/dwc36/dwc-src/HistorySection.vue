@@ -68,7 +68,8 @@
 			</template>
 			<div v-else class="history-empty">
 				<v-icon large color="grey" aria-hidden="true">mdi-chart-timeline-variant</v-icon>
-				<div class="text-body-2">{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : refusal || $t('plugins.WorkshopPower.consumption.no_readings_in_the_range') }}</div>
+				<lock-reason v-if="!loading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" />
+				<div v-else class="text-body-2">{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_readings_in_the_range') }}</div>
 			</div>
 		</v-card-text>
 	</v-card>
@@ -77,8 +78,7 @@
 <script>
 import { api } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js' // what the role may do (vue/_shared)
-import { isRefusal } from './session-note.js'
-import { refusalNow } from './session-now.js' // a refusal told by its cause
+import { isRefusal, refusalNow, refusalCauseNow } from './session-refusal.js' // a refusal told by its cause: isRefusal, refusalNow, refusalCauseNow
 import DetailChart from './DetailChart.vue'
 import RangePicker from './RangePicker.vue' // vue/_shared36
 import HelpTip from './HelpTip.vue' // vue/_shared36
@@ -87,6 +87,7 @@ import { fmtKwh, costText } from './money.js'
 import { asDateHourLocal } from './dates.js'
 import { parseTs } from './jobs.js'
 import { baseload } from './job-insights.js'
+import LockReason from './LockReason.vue' // vue/_shared36
 
 // Readings every 30 s: more than 3 min without a reading = gap (machine/meter off). A null point is inserted so that the
 // chart cuts the line instead of joining the ends with a straight ramp that looks like real consumption.
@@ -94,7 +95,10 @@ const GAP_MS = 3 * 60 * 1000
 
 export default {
 	mixins: [roleMixin],
-	components: { DetailChart, RangePicker, HelpTip },
+	// what the previous person read stays in no data of the section (ESTANDAR 3.1); onSessionChange reads it again
+	sessionData: ['summary', 'serial', 'serialStepS', 'refused'],
+	sessionErrors: ['refused'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
+	components: { LockReason, DetailChart, RangePicker, HelpTip },
 	props: {
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
 		meter: { type: String, default: '' }
@@ -111,6 +115,11 @@ export default {
 		}
 	},
 	computed: {
+		// the cause of that refusal (no session / role too low), to draw it as the calm note of its cause
+		refusalKind() {
+			void this.identityTick
+			return refusalCauseNow(this.refused)
+		},
 		refusal() {
 			void this.identityTick
 			return refusalNow(this.refused, 'viewer')

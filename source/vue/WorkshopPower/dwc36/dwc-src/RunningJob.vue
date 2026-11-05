@@ -35,10 +35,13 @@
 
 <script>
 import { api } from './workshop-api.js'
+import { roleMixin } from './role-mixin.js' // vue/_shared36
 import { fmtKwh, costText } from './money.js'
 import { fmtDur, localIso } from './jobs.js'
 
 export default {
+	mixins: [roleMixin],
+	sessionData: ['data', 'loaded'], // the energy of the job the previous person read stays in no field
 	props: {
 		job: { type: Object, default: null }, // runningJob() of job-insights.js, or null
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },

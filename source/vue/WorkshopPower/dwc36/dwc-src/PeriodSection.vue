@@ -63,7 +63,8 @@
 			/>
 			<div v-else class="period-empty">
 				<v-icon large color="grey" aria-hidden="true">mdi-chart-bar</v-icon>
-				<div class="text-body-2">{{ periodLoading ? $t('plugins.WorkshopPower.consumption.loading') : refusal || $t('plugins.WorkshopPower.consumption.no_data_for_this_period') }}</div>
+				<lock-reason v-if="!periodLoading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" />
+				<div v-else class="text-body-2">{{ periodLoading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_data_for_this_period') }}</div>
 			</div>
 			<div class="text-caption grey--text mt-1">
 				{{ $t('plugins.WorkshopPower.consumption.tap_a_bar_hint', { prev: textPrevious }) }}
@@ -75,13 +76,13 @@
 <script>
 import { api } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js' // what the role may do (vue/_shared)
-import { isRefusal } from './session-note.js'
-import { refusalNow } from './session-now.js' // a refusal told by its cause
+import { isRefusal, refusalNow, refusalCauseNow } from './session-refusal.js' // a refusal told by its cause: isRefusal, refusalNow, refusalCauseNow
 import ConsumptionBars from './ConsumptionBars.vue'
 import { fmtKwh, costText } from './money.js'
 import { asDateLocal } from './dates.js'
 import { periodTable } from './job-insights.js'
 import { exchangeExportCsv } from './data-exchange-ui.js'
+import LockReason from './LockReason.vue' // vue/_shared36
 
 function sumKwh(buckets, until) {
 	let s = 0
@@ -97,7 +98,10 @@ function sumKwh(buckets, until) {
 
 export default {
 	mixins: [roleMixin],
-	components: { ConsumptionBars },
+	// what the previous person read stays in no data of the section (ESTANDAR 3.1); onSessionChange reads it again
+	sessionData: ['periodData', 'periodPrevious', 'refused'],
+	sessionErrors: ['refused'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
+	components: { LockReason, ConsumptionBars },
 	props: {
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
 		meter: { type: String, default: '' } // '' = the main meter, 'total' or the key of a meter
@@ -107,6 +111,11 @@ export default {
 	},
 	computed: {
 		// the period was refused (403 / 401): told by its cause instead of "no data"
+		// the cause of that refusal (no session / role too low), to draw it as the calm note of its cause
+		refusalKind() {
+			void this.identityTick
+			return refusalCauseNow(this.refused)
+		},
 		refusal() {
 			void this.identityTick
 			return refusalNow(this.refused, 'viewer')

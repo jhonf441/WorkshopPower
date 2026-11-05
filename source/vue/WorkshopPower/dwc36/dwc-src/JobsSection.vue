@@ -101,8 +101,9 @@
 				</div>
 				<div v-else class="jobs-empty">
 					<v-icon large color="grey" aria-hidden="true">mdi-briefcase-clock-outline</v-icon>
-					<div class="text-body-2">
-						{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : refusal || $t(hasActivity ? 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs' : 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs_no_activity') }}
+					<lock-reason v-if="!loading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" />
+					<div v-else class="text-body-2">
+						{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t(hasActivity ? 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs' : 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs_no_activity') }}
 					</div>
 				</div>
 			</v-card-text>
@@ -113,8 +114,7 @@
 <script>
 import { api } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js' // what the role may do (vue/_shared)
-import { isRefusal } from './session-note.js'
-import { refusalNow } from './session-now.js' // a refusal told by its cause
+import { isRefusal, refusalNow, refusalCauseNow } from './session-refusal.js' // a refusal told by its cause: isRefusal, refusalNow, refusalCauseNow
 import RunningJob from './RunningJob.vue'
 import JobSummary from './JobSummary.vue'
 import JobItem from './JobItem.vue'
@@ -128,12 +128,16 @@ import { loadGrouping, saveGrouping, loadCollapsed, saveCollapsed } from './job-
 import { colorMode } from './colors.js'
 import { MODE_NAMES } from './machine-modes.js'
 import { exchangeExportCsv } from './data-exchange-ui.js'
+import LockReason from './LockReason.vue' // vue/_shared36
 
 const LIMIT = 8 // jobs shown before "see all"
 
 export default {
 	mixins: [roleMixin],
-	components: { RunningJob, JobSummary, JobItem, HelpTip },
+	// what the previous person read stays in no data of the section (ESTANDAR 3.1); onSessionChange reads it again
+	sessionData: ['jobs', 'refused', 'open', 'powers'],
+	sessionErrors: ['refused'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
+	components: { LockReason, RunningJob, JobSummary, JobItem, HelpTip },
 	props: {
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
 		meter: { type: String, default: '' }, // '' = the main meter, 'total' or the key of a meter
@@ -159,6 +163,11 @@ export default {
 		}
 	},
 	computed: {
+		// the cause of that refusal (no session / role too low), to draw it as the calm note of its cause
+		refusalKind() {
+			void this.identityTick
+			return refusalCauseNow(this.refused)
+		},
 		refusal() {
 			void this.identityTick
 			return refusalNow(this.refused, 'viewer')

@@ -4,10 +4,12 @@
 		<div class="meter-current">
 			<v-icon :color="live ? 'success' : 'grey'" class="mr-2" aria-hidden="true">mdi-meter-electric-outline</v-icon>
 			<div class="flex-grow-1 text-body-2" :class="!meters.length && queried ? 'warning--text' : ''">
-				{{ querying ? $t('plugins.WorkshopPower.meterConfig.querying') : meters.length ? (meters.length === 1 ? $t('plugins.WorkshopPower.meterConfig.one_meter') : $t('plugins.WorkshopPower.meterConfig.n_meters', { n: meters.length })) : (queried ? $t('plugins.WorkshopPower.meterConfig.no_meter_is_configured_add_one') : $t(signedOutNow ? 'plugins.WorkshopPower.meterConfig.sign_in_to_query_the_meter' : 'plugins.WorkshopPower.meterConfig.couldn_t_query_the_meter')) }}
+				{{ querying ? $t('plugins.WorkshopPower.meterConfig.querying') : meters.length ? (meters.length === 1 ? $t('plugins.WorkshopPower.meterConfig.one_meter') : $t('plugins.WorkshopPower.meterConfig.n_meters', { n: meters.length })) : (queried ? $t('plugins.WorkshopPower.meterConfig.no_meter_is_configured_add_one') : queryError ? '' : $t('plugins.WorkshopPower.meterConfig.couldn_t_query_the_meter')) }}
 			</div>
 			<v-btn small color="primary" outlined :disabled="open && isNew" @click="newMeter()"><v-icon small left>mdi-plus</v-icon>{{ $t('plugins.WorkshopPower.meterConfig.add_meter') }}</v-btn>
 		</div>
+		<!-- the read of the meters was refused or failed: the cause in a sentence, never an empty list -->
+		<error-notice v-if="queryError" :error="queryError" retry class="mb-2" @retry="query()" />
 		<div class="mlist">
 			<meter-card
 				v-for="(m, i) in meters" :key="m.key" :meter="m" :reading="readingOf(m)" :selected="open && sel === m.key"
@@ -112,21 +114,23 @@
 						<div class="step-title">{{ $t('plugins.WorkshopPower.meterConfig.meter_data') }}</div>
 						<v-row dense>
 							<v-col cols="12" sm="6">
-								<v-text-field
-									v-model.trim="form.id" :label="$t('plugins.WorkshopPower.meterConfig.device_id')" dense outlined hide-details="auto"
-									:hint="$t('plugins.WorkshopPower.meterConfig.id_field_hint')" persistent-hint
-								/>
+								<wf-field id="mc-device-id" :label="$t('plugins.WorkshopPower.meterConfig.device_id')">
+									<template #help><help-tip :title="$t('plugins.WorkshopPower.meterConfig.device_id')">{{ $t('plugins.WorkshopPower.meterConfig.id_field_hint') }}</help-tip></template>
+									<v-text-field id="mc-device-id" v-model.trim="form.id" :aria-label="$t('plugins.WorkshopPower.meterConfig.device_id')" dense outlined hide-details="auto" />
+								</wf-field>
 							</v-col>
 							<v-col cols="12" sm="6">
 								<v-text-field v-model.trim="form.ip" label="IP" placeholder="192.168.1.50" dense outlined hide-details="auto" />
 							</v-col>
 							<v-col cols="12" sm="8">
-								<v-text-field
-									v-model="form.key" :label="$t('plugins.WorkshopPower.meterConfig.local_key_3')" dense outlined hide-details="auto"
-									:type="viewKey ? 'text' : 'password'" autocomplete="off"
-									:append-icon="viewKey ? 'mdi-eye-off' : 'mdi-eye'" @click:append="viewKey = !viewKey"
-									:hint="sameId ? $t('plugins.WorkshopPower.meterConfig.leave_empty_to_keep_key') : $t('plugins.WorkshopPower.meterConfig.key_field_hint')" persistent-hint
-								/>
+								<wf-field id="mc-local-key" :label="$t('plugins.WorkshopPower.meterConfig.local_key_3')" :message="sameId ? $t('plugins.WorkshopPower.meterConfig.leave_empty_to_keep_key') : ''">
+									<template #help><help-tip :title="$t('plugins.WorkshopPower.meterConfig.local_key_3')">{{ $t('plugins.WorkshopPower.meterConfig.key_field_hint') }}</help-tip></template>
+									<v-text-field
+										id="mc-local-key" v-model="form.key" :aria-label="$t('plugins.WorkshopPower.meterConfig.local_key_3')" dense outlined hide-details="auto"
+										:type="viewKey ? 'text' : 'password'" autocomplete="off"
+										:append-icon="viewKey ? 'mdi-eye-off' : 'mdi-eye'" @click:append="viewKey = !viewKey"
+									/>
+								</wf-field>
 							</v-col>
 							<v-col cols="12" sm="4">
 								<v-select v-model="form.version" :items="versions" :label="$t('plugins.WorkshopPower.meterConfig.version')" dense outlined hide-details="auto" />
@@ -221,16 +225,21 @@ import { mapActions } from 'vuex'
 import { api } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js' // vue/_shared
 import { signedOut } from './workshop-auth.js' // vue/_shared
-import { isRefusal } from './session-note.js'
-import { refusalNow } from './session-now.js' // a refusal told by its cause
+import { isRefusal, refusalNow } from './session-refusal.js' // a refusal told by its cause: isRefusal, refusalNow, refusalCauseNow
 import { pluginOf } from './workshop-ids.js' // Id nuevo o viejo del plugin
 import { dataOf } from './plugin-data.js'
 import MeterCard from './MeterCard.vue'
 import MeterHealth from './MeterHealth.vue'
+import HelpTip from './HelpTip.vue' // vue/_shared36
+import WfField from './WfField.vue' // vue/_shared36
+import ErrorNotice from './ErrorNotice.vue' // vue/_shared36
 
 export default {
-	components: { MeterCard, MeterHealth },
+	components: { ErrorNotice, WfField, HelpTip, MeterCard, MeterHealth },
 	mixins: [roleMixin],
+	// the meter data (its local key too) of the previous person stays in no field: it is read again (onSessionChange)
+	sessionData: ['meter', 'meters', 'orderCut', 'sel', 'newName', 'aj', 'ajMsg', 'queried', 'queryError', 'form', 'viewKey', 'found', 'searchError', 'testResult', 'testedWith', 'savedMsg', 'open'],
+	sessionErrors: ['queryError', 'searchError'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
 	props: {
 		live: { type: Boolean, default: false },
 		openEditor: { type: Boolean, default: false }
@@ -246,6 +255,7 @@ export default {
 			savingAj: false,
 			ajMsg: null,
 			querying: false,
+			queryError: null, // the error of the last read of the meters (a refusal too): the page says its cause
 			queried: false,
 			forgetArmed: false,
 			open: this.openEditor,
@@ -421,12 +431,14 @@ export default {
 			try {
 				const r = await this.m9003('get');
 				this.applyState(r);
+				this.queryError = null;
 				this.queried = true;
 				if (!this.meters.length) {
 					this.newMeter();
 				}
 			} catch (e) {
 				this.meter = null;
+				this.queryError = e;
 			} finally {
 				this.querying = false;
 			}
