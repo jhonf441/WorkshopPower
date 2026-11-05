@@ -9,6 +9,8 @@
 			<v-btn v-if="canChange" x-small text color="primary" class="ml-1" @click="open = !open">
 				{{ open ? $t('plugins.WorkshopPower.consumption.close') : $t('plugins.WorkshopPower.consumption.change') }}
 			</v-btn>
+			<!-- the editor is not drawn below technician: the reason is written where it would be (the "no rate" text already says it) -->
+			<span v-else-if="tariff.value_kwh" class="text-caption grey--text ml-2 lock-reason"><v-icon x-small left>mdi-lock-outline</v-icon>{{ lockText('technician') }}</span>
 		</div>
 		<v-expand-transition>
 			<div v-if="canChange" v-show="open">
@@ -27,7 +29,8 @@
 						<v-btn color="primary" small :loading="saving" @click="save()">{{ $t('plugins.WorkshopPower.consumption.save') }}</v-btn>
 					</v-col>
 				</v-row>
-				<error-notice :error="error" retry class="mt-2" @retry="save()" />
+				<div v-if="refusal" class="text-caption mt-2 lock-reason"><v-icon x-small left>mdi-lock-outline</v-icon>{{ refusal }}</div>
+				<error-notice v-else :error="error" retry class="mt-2" @retry="save()" />
 			</div>
 		</v-expand-transition>
 	</div>
@@ -45,6 +48,7 @@ import ErrorNotice from './ErrorNotice.vue' // vue/_shared
 import { api } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js' // vue/_shared
 import { signedOut } from './workshop-auth.js' // vue/_shared
+import { refusalNow } from './session-now.js' // a refusal told by its cause
 import { formatMoney } from './money.js'
 
 export default {
@@ -70,6 +74,11 @@ export default {
 		},
 		canChange() {
 			return this.atLeast('technician');
+		},
+		// a refused save (expired session, role taken away) says why; ErrorNotice hides the 401 on purpose
+		refusal() {
+			void this.identityTick;
+			return refusalNow(this.error, 'technician');
 		}
 	},
 	watch: {

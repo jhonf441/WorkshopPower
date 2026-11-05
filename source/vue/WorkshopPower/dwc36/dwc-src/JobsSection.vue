@@ -108,7 +108,7 @@
 				<div v-else class="jobs-empty">
 					<v-icon large color="grey" aria-hidden="true">mdi-briefcase-clock-outline</v-icon>
 					<div class="text-body-2">
-						{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t(hasActivity ? 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs' : 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs_no_activity') }}
+						{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : refusal || $t(hasActivity ? 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs' : 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs_no_activity') }}
 					</div>
 				</div>
 			</v-card-text>
@@ -118,6 +118,9 @@
 
 <script>
 import { api } from './workshop-api.js'
+import { roleMixin } from './role-mixin.js' // what the role may do (vue/_shared)
+import { isRefusal } from './session-note.js'
+import { refusalNow } from './session-now.js' // a refusal told by its cause
 import RunningJob from './RunningJob.vue'
 import JobSummary from './JobSummary.vue'
 import JobItem from './JobItem.vue'
@@ -134,6 +137,7 @@ import { exchangeExportCsv } from './data-exchange-ui.js'
 const LIMIT = 8 // jobs shown before "see all"
 
 export default {
+	mixins: [roleMixin],
 	components: { RunningJob, JobSummary, JobItem },
 	props: {
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
@@ -146,6 +150,7 @@ export default {
 		return {
 			LIMIT,
 			jobs: [],
+			refused: null, // the last refusal (403 / 401) of the list: told by its cause instead of "no jobs logged"
 			loading: false,
 			days: 30,
 			mode: 'all', // 'all' or a group id of job-groups.js (cnc, laser, fff, unknown)
@@ -160,6 +165,10 @@ export default {
 		}
 	},
 	computed: {
+		refusal() {
+			void this.identityTick
+			return refusalNow(this.refused, 'viewer')
+		},
 		sortItems() {
 			return ['recent', 'energy', 'duration', 'power'].map(k => ({ text: this.t('sort_' + k), value: k }))
 		},
@@ -213,6 +222,10 @@ export default {
 	},
 	methods: {
 		fmtKwh,
+		// the person signed in / out or the role changed: the list is read again
+		onSessionChange() {
+			this.load()
+		},
 		t(k) {
 			return this.$t('plugins.WorkshopPower.consumption.' + k)
 		},
@@ -243,12 +256,14 @@ export default {
 		},
 		async load() {
 			this.loading = true
+			this.refused = null
 			try {
 				const today = new Date()
 				const day = d => jobsLib.localDay(d.getTime())
 				const data = await api('activity.list', { from: day(new Date(today.getTime() - 30 * 86400000)), to: day(today), type: 'job_end', limit: 100 })
 				this.jobs = buildJobs(data.rows || [], this.t)
 			} catch (e) {
+				this.refused = isRefusal(e) ? e : null
 				this.jobs = []
 			} finally {
 				this.loading = false

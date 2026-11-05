@@ -97,8 +97,8 @@
 								<v-icon small class="mr-2">mdi-wifi</v-icon>
 								<span class="text-body-2">{{ d.ip }}</span>
 								<span class="text-caption grey--text ml-2 meter-data">{{ d.id }} &middot; v{{ d.version || '?' }}</span>
-								<v-chip v-if="configuredOf(d)" x-small class="ml-2" color="success" text-color="white">{{ $t('plugins.WorkshopPower.meterConfig.already_configured', { name: configuredOf(d).name }) }}</v-chip>
-								<v-chip v-else-if="d.current" x-small class="ml-2" color="success" text-color="white">{{ $t('plugins.WorkshopPower.meterConfig.in_use') }}</v-chip>
+								<v-chip v-if="configuredOf(d)" x-small class="ml-2" color="success" text-color="black">{{ $t('plugins.WorkshopPower.meterConfig.already_configured', { name: configuredOf(d).name }) }}</v-chip>
+								<v-chip v-else-if="d.current" x-small class="ml-2" color="success" text-color="black">{{ $t('plugins.WorkshopPower.meterConfig.in_use') }}</v-chip>
 							</div>
 						</div>
 					</div>
@@ -221,6 +221,8 @@ import { mapActions } from 'vuex'
 import { api } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js' // vue/_shared
 import { signedOut } from './workshop-auth.js' // vue/_shared
+import { isRefusal } from './session-note.js'
+import { refusalNow } from './session-now.js' // a refusal told by its cause
 import { pluginOf } from './workshop-ids.js' // Id nuevo o viejo del plugin
 import { dataOf } from './plugin-data.js'
 import MeterCard from './MeterCard.vue'
@@ -394,7 +396,7 @@ export default {
 				this.ajMsg = i18n.t('plugins.WorkshopPower.meterConfig.saved');
 				this.$emit('changed');
 			} catch (e) {
-				this.ajMsg = i18n.t('plugins.WorkshopPower.meterConfig.not_saved') + (e.message || e);
+				this.ajMsg = isRefusal(e) ? refusalNow(e, 'technician') : i18n.t('plugins.WorkshopPower.meterConfig.not_saved') + (e.message || e);
 			} finally {
 				this.savingAj = false;
 			}
@@ -409,6 +411,10 @@ export default {
 			const nombre = this.currentSel ? this.currentSel.name : this.newName || this.sel || '';
 			// the local key goes as plain text (the API takes any character)
 			return { meter: String(this.sel || ''), name: String(nombre), id: String(f.id || ''), ip: String(f.ip || ''), key: String(f.key || ''), version: String(f.version || '') };
+		},
+		// the person signed in / out or the role changed: the meter is read again
+		onSessionChange() {
+			this.query();
 		},
 		async query() {
 			this.querying = true;
@@ -436,7 +442,7 @@ export default {
 					this.searchError = r.error;
 				}
 			} catch (e) {
-				this.searchError = i18n.t('plugins.WorkshopPower.meterConfig.the_search_didn_t_respond') + (e.message || e);
+				this.searchError = isRefusal(e) ? refusalNow(e, 'technician') : i18n.t('plugins.WorkshopPower.meterConfig.the_search_didn_t_respond') + (e.message || e);
 			} finally {
 				this.searching = false;
 			}
@@ -476,7 +482,7 @@ export default {
 				this.testResult = await this.m9003('test', testArgs);
 				this.testedWith = signature;
 			} catch (e) {
-				this.testResult = { ok: false, error: i18n.t('plugins.WorkshopPower.meterConfig.no_response') + (e.message || e) };
+				this.testResult = { ok: false, error: isRefusal(e) ? refusalNow(e, 'technician') : i18n.t('plugins.WorkshopPower.meterConfig.no_response') + (e.message || e) };
 			} finally {
 				this.testing = false;
 			}
@@ -496,7 +502,7 @@ export default {
 					this.$emit('changed');
 				}
 			} catch (e) {
-				this.testResult = { ok: false, error: i18n.t('plugins.WorkshopPower.meterConfig.could_not_save') + (e.message || e) };
+				this.testResult = { ok: false, error: isRefusal(e) ? refusalNow(e, 'technician') : i18n.t('plugins.WorkshopPower.meterConfig.could_not_save') + (e.message || e) };
 			} finally {
 				this.saving = false;
 			}

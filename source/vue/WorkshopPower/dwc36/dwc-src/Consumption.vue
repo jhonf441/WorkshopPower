@@ -4,6 +4,7 @@
 		<page-header :lead="$t('plugins.WorkshopPower.common.lead')" icon="mdi-gauge" :title="$t('plugins.WorkshopPower.common.power_usage')" :reasons="headerReasons">
 			<template v-slot:startup><startup-panel plugin="WorkshopPower" :defs="rowsStartup" /></template>
 		</page-header>
+		<hidden-note :sections="allSections" class="mb-2" />
 		<div class="st-layout">
 			<side-tabs v-model="section" :items="sections" />
 			<div class="st-body">
@@ -64,6 +65,7 @@ import TariffRow from './TariffRow.vue'
 import { roleMixin } from './role-mixin.js' // what the role sees (vue/_shared)
 import { visibleItems } from './role-view.js'
 import SideTabs from './SideTabs.vue'
+import HiddenNote from './HiddenNote.vue' // the quiet line for the sections the role does not see (vue/_shared)
 import { pluginOf, pathExists } from './workshop-ids.js' // Id nuevo o viejo del plugin
 import { dataOf } from './plugin-data.js'
 import { costText, fmtKwh } from './money.js' // amount in the language of DWC (test/money.test.js)
@@ -74,7 +76,7 @@ import { sectionColor } from './section-colors.js' // the color of each section 
 
 export default {
 	mixins: [roleMixin],
-	components: { PageHeader, SideTabs, ServiceNotice, StartupPanel, LiveSummary, RunningJob, BudgetCard, PeriodSection, JobsSection, HistorySection, MeterConfig, TariffRow },
+	components: { PageHeader, SideTabs, HiddenNote, ServiceNotice, StartupPanel, LiveSummary, RunningJob, BudgetCard, PeriodSection, JobsSection, HistorySection, MeterConfig, TariffRow },
 	data() {
 		let medView = '';
 		try {
@@ -110,16 +112,20 @@ export default {
 		hasActivity() {
 			return pathExists(this.$router, '/Plugins/Activity');
 		},
-		sections() {
+		// every section with its role (the note about the hidden ones needs them all)
+		allSections() {
 			const t = k => i18n.t('plugins.WorkshopPower.consumption.' + k);
 			// F3-V (2026-10-21): everybody reads the consumption; the meter settings are a technician's
-			return visibleItems([
+			return [
 				{ id: 'summary', icon: 'mdi-gauge', label: t('nav_summary') },
 				{ id: 'period', icon: 'mdi-chart-bar', label: t('nav_period') },
 				{ id: 'jobs', icon: 'mdi-briefcase-clock-outline', label: t('nav_jobs') },
 				{ id: 'history', icon: 'mdi-history', label: t('nav_history') },
 				{ id: 'meter', icon: 'mdi-meter-electric-outline', label: t('nav_meter'), min: 'technician' }
-			], op => this.canDo(op));
+			];
+		},
+		sections() {
+			return visibleItems(this.allSections, op => this.canDo(op));
 		},
 		pluginModel() {
 			const plugins = this.$store.state.machine.model.plugins;
@@ -276,6 +282,11 @@ export default {
 		clearInterval(this.timerHeartbeat);
 	},
 	methods: {
+		// the person signed in / out or the role changed: the rate and the tiles are read again (the sections read their own data)
+		onSessionChange() {
+			this.loadTariff();
+			this.loadSummaries();
+		},
 		// the page is in view (DWC keeps it alive with keep-alive when going to another)
 		pageVisible() {
 			return !(document.hidden || !this.$el || this.$el.isConnected === false);

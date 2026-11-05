@@ -63,7 +63,7 @@
 			/>
 			<div v-else class="period-empty">
 				<v-icon large color="grey" aria-hidden="true">mdi-chart-bar</v-icon>
-				<div class="text-body-2">{{ periodLoading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_data_for_this_period') }}</div>
+				<div class="text-body-2">{{ periodLoading ? $t('plugins.WorkshopPower.consumption.loading') : refusal || $t('plugins.WorkshopPower.consumption.no_data_for_this_period') }}</div>
 			</div>
 			<div class="text-caption grey--text mt-1">
 				{{ $t('plugins.WorkshopPower.consumption.tap_a_bar_hint', { prev: textPrevious }) }}
@@ -74,6 +74,9 @@
 
 <script>
 import { api } from './workshop-api.js'
+import { roleMixin } from './role-mixin.js' // what the role may do (vue/_shared)
+import { isRefusal } from './session-note.js'
+import { refusalNow } from './session-now.js' // a refusal told by its cause
 import ConsumptionBars from './ConsumptionBars.vue'
 import { fmtKwh, costText } from './money.js'
 import { asDateLocal } from './dates.js'
@@ -93,15 +96,21 @@ function sumKwh(buckets, until) {
 }
 
 export default {
+	mixins: [roleMixin],
 	components: { ConsumptionBars },
 	props: {
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
 		meter: { type: String, default: '' } // '' = the main meter, 'total' or the key of a meter
 	},
 	data() {
-		return { periodTab: 'day', refDate: new Date(), periodData: null, periodPrevious: null, periodLoading: false, now: Date.now(), timerTick: null, timerRefresh: null }
+		return { periodTab: 'day', refDate: new Date(), periodData: null, periodPrevious: null, periodLoading: false, refused: null, now: Date.now(), timerTick: null, timerRefresh: null }
 	},
 	computed: {
+		// the period was refused (403 / 401): told by its cause instead of "no data"
+		refusal() {
+			void this.identityTick
+			return refusalNow(this.refused, 'viewer')
+		},
 		isPeriodCurrent() {
 			const today = new Date(this.now)
 			if (this.periodTab === 'day') {
@@ -231,6 +240,10 @@ export default {
 			this.refDate = new Date()
 			this.loadPeriod()
 		},
+		// the person signed in / out or the role changed: the bars are read again
+		onSessionChange() {
+			this.loadPeriod()
+		},
 		async loadPeriod(quiet) {
 			const tab = this.periodTab
 			const refD = new Date(this.refDate)
@@ -250,7 +263,9 @@ export default {
 					this.periodData = current && !current.error ? current : null
 					this.periodPrevious = previous && !previous.error ? previous : null
 				}
+				this.refused = null
 			} catch (e) {
+				this.refused = isRefusal(e) ? e : null
 				if (!quiet) {
 					this.periodData = null
 					this.periodPrevious = null

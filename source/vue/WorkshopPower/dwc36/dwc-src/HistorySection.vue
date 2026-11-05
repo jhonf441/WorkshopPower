@@ -67,7 +67,7 @@
 			</template>
 			<div v-else class="history-empty">
 				<v-icon large color="grey" aria-hidden="true">mdi-chart-timeline-variant</v-icon>
-				<div class="text-body-2">{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_readings_in_the_range') }}</div>
+				<div class="text-body-2">{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : refusal || $t('plugins.WorkshopPower.consumption.no_readings_in_the_range') }}</div>
 			</div>
 		</v-card-text>
 	</v-card>
@@ -75,6 +75,9 @@
 
 <script>
 import { api } from './workshop-api.js'
+import { roleMixin } from './role-mixin.js' // what the role may do (vue/_shared)
+import { isRefusal } from './session-note.js'
+import { refusalNow } from './session-now.js' // a refusal told by its cause
 import DetailChart from './DetailChart.vue'
 import RangePicker from './RangePicker.vue' // vue/_shared36
 import { relative, resolve, asTexts } from './range-picker.js' // vue/_shared36
@@ -88,6 +91,7 @@ import { baseload } from './job-insights.js'
 const GAP_MS = 3 * 60 * 1000
 
 export default {
+	mixins: [roleMixin],
 	components: { DetailChart, RangePicker },
 	props: {
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
@@ -100,10 +104,15 @@ export default {
 			summary: null,
 			serial: [],
 			serialStepS: 0, // width of a point in seconds when the service averaged a long range; 0 = raw readings
-			loading: false
+			loading: false,
+			refused: null // the last refusal (403 / 401) of the readings: told by its cause instead of "no readings"
 		}
 	},
 	computed: {
+		refusal() {
+			void this.identityTick
+			return refusalNow(this.refused, 'viewer')
+		},
 		serialStepMin() {
 			return Math.max(1, Math.round(this.serialStepS / 60))
 		},
@@ -133,6 +142,10 @@ export default {
 	},
 	methods: {
 		fmtKwh,
+		// the person signed in / out or the role changed: the readings are read again
+		onSessionChange() {
+			this.search()
+		},
 		costOf(kwh) {
 			return costText(kwh, this.tariff, this.$i18n.locale)
 		},
@@ -163,6 +176,7 @@ export default {
 				this.serial = data.serial || []
 				this.serialStepS = Number(data.serial_step_s) || 0
 			} catch (e) {
+				this.refused = isRefusal(e) ? e : null
 				this.summary = null
 				this.serial = []
 				this.serialStepS = 0

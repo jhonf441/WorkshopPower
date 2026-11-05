@@ -20,7 +20,7 @@
 			<v-chip x-small outlined :color="meter.feeds_pi ? 'primary' : ''">{{ meter.feeds_pi ? $t('plugins.WorkshopPower.meterConfig.powers_the_system') : meter.inside_of ? $t('plugins.WorkshopPower.meterConfig.inside_of', { name: insideName }) : $t('plugins.WorkshopPower.meterConfig.own_line') }}</v-chip>
 			<v-chip v-if="meter.short" x-small outlined :color="meter.feeds_pi ? 'warning' : ''">{{ meter.feeds_pi ? $t('plugins.WorkshopPower.meterConfig.cut_last') : $t('plugins.WorkshopPower.meterConfig.cut_on_shutdown') }}</v-chip>
 			<v-chip v-if="meter.watches" x-small outlined color="error">{{ $t('plugins.WorkshopPower.meterConfig.watches_heater', { heater: meter.watches.heater }) }}</v-chip>
-			<v-chip v-if="!meter.configured" x-small color="warning" text-color="white">{{ $t('plugins.WorkshopPower.meterConfig.no_device_data') }}</v-chip>
+			<v-chip v-if="!meter.configured" x-small color="warning" text-color="black">{{ $t('plugins.WorkshopPower.meterConfig.no_device_data') }}</v-chip>
 		</div>
 		<dl class="mcard-fields">
 			<div><dt>{{ $t('plugins.WorkshopPower.meterConfig.card_id') }}</dt><dd>{{ meter.id || '--' }}</dd></div>
