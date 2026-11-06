@@ -7,8 +7,8 @@
 					<div class="text-h6 d-flex align-center mb-2"><v-icon class="mr-2">mdi-gauge</v-icon>{{ $t('plugins.WorkshopPower.common.power_usage') }}</div>
 					<div class="text-subtitle-1 font-weight-medium mb-1">{{ $t('plugins.WorkshopPower.noMeter.title') }}</div>
 					<div class="text-body-2 mb-3">{{ $t('plugins.WorkshopPower.noMeter.text') }}</div>
-					<v-btn v-if="atLeast('admin')" small color="primary" :loading="busy" @click="enable()">{{ $t('plugins.WorkshopPower.noMeter.enable') }}</v-btn>
-					<div v-else class="text-caption">{{ $t('plugins.WorkshopPower.noMeter.admin_hint') }}</div>
+					<v-btn small color="primary" :disabled="!atLeast('admin')" :loading="busy" @click="enable()">{{ $t('plugins.WorkshopPower.noMeter.enable') }}</v-btn>
+					<lock-reason min="admin" class="mt-2" />
 					<error-notice :error="error" class="mt-2" />
 				</v-card-text>
 			</v-card>
@@ -21,6 +21,7 @@
 import ServiceNotice from './ServiceNotice.vue'
 import Consumption from './Consumption.vue'
 import ErrorNotice from './ErrorNotice.vue' // vue/_shared
+import LockReason from './LockReason.vue' // vue/_shared36
 import { roleMixin } from './role-mixin.js' // vue/_shared
 import { api } from './workshop-api.js'
 import { workshopProfile } from './machine-profile.js'
@@ -30,7 +31,7 @@ import { powerView, enableMeterChange } from './meter-gate.js'
 // only wait for readings that never come) and a clear message takes their place; otherwise the full page.
 export default {
 	mixins: [roleMixin],
-	components: { ServiceNotice, Consumption, ErrorNotice },
+	components: { ServiceNotice, Consumption, ErrorNotice, LockReason },
 	data() {
 		return { available: null, busy: false, error: null }
 	},

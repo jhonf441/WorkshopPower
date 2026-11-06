@@ -99,7 +99,7 @@
 		"nav_jobs": "Trabajos",
 		"nav_history": "Historial",
 		"nav_meter": "Medidor",
-		"no_rate_ask_technician": "Sin tarifa: pide a un tecnico que escriba el costo del kWh.",
+		"no_rate_set": "Sin tarifa configurada.",
 		"jobs_title": "Trabajos terminados",
 		"jobs_subtitle": "Energía y costo de cada trabajo, comparados entre sí.",
 		"filter_all": "Todos",
@@ -179,7 +179,7 @@
 		"budget_invalid": "Escribe un número mayor que 0.",
 		"empty_title": "Todavía no hay lecturas del medidor",
 		"empty_text_tech": "Sin medidor no hay consumo que mostrar. Agrega uno en Medidor: necesitas el ID y la clave local del dispositivo Tuya.",
-		"empty_text_other": "Sin medidor no hay consumo que mostrar. Pide a un técnico que lo configure.",
+		"empty_text_other": "Sin medidor no hay consumo que mostrar.",
 		"stale_title": "El medidor dejó de responder",
 		"stale_text": "Revisa que esté encendido y conectado al WiFi. Lo que ves es la última lectura que llegó.",
 		"units_hint": "W es la potencia en este instante; kWh es la energía acumulada (potencia por tiempo).",
@@ -445,7 +445,6 @@
 		"title": "Esta máquina no tiene medidor de consumo",
 		"text": "Sin medidor no hay consumo, costo ni energia por trabajo que mostrar, asi que esas secciones estan ocultas. Si después instalas un medidor, activalo aqui.",
 		"enable": "Tengo un medidor Tuya",
-		"enabling": "Activando...",
-		"admin_hint": "Cambiar el perfil necesita una sesión de administrador."
+		"enabling": "Activando..."
 	}
 }

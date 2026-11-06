@@ -4,11 +4,11 @@
 		<page-header :lead="$t('plugins.WorkshopPower.common.lead')" icon="mdi-gauge" :title="$t('plugins.WorkshopPower.common.power_usage')" :reasons="headerReasons">
 			<template v-slot:startup><startup-panel plugin="WorkshopPower" :defs="rowsStartup" /></template>
 		</page-header>
-		<hidden-note :sections="allSections" class="mb-2" />
 		<div class="st-layout">
 			<side-tabs v-model="section" :items="sections" />
 			<div class="st-body">
-				<div v-if="section === 'summary'">
+				<locked-cover v-if="lockedSection" :needed="lockedSection" />
+				<div v-if="!lockedSection && section === 'summary'">
 					<!-- the tiles or the rate could not be read: the cause in a sentence (a refusal is the calm note of its cause), never silent zeros -->
 					<error-notice v-if="readError" :error="readError" retry @retry="loadSummaries(); loadTariff()" />
 					<!-- ===== Live reading + quick summary ===== -->
@@ -25,12 +25,12 @@
 						</v-card-text>
 					</v-card>
 				</div>
-				<period-section v-if="section === 'period'" :tariff="tariff" :meter="meterView" />
+				<period-section v-if="!lockedSection && section === 'period'" :tariff="tariff" :meter="meterView" />
 				<jobs-section
-					v-if="section === 'jobs'" :tariff="tariff" :meter="meterView" :has-activity="hasActivity" :running="running" :watts="view.w"
+					v-if="!lockedSection && section === 'jobs'" :tariff="tariff" :meter="meterView" :has-activity="hasActivity" :running="running" :watts="view.w"
 				/>
-				<history-section v-if="section === 'history'" :tariff="tariff" :meter="meterView" />
-				<div v-if="section === 'meter'">
+				<history-section v-if="!lockedSection && section === 'history'" :tariff="tariff" :meter="meterView" />
+				<div v-if="!lockedSection && section === 'meter'">
 					<!-- ===== Meter settings ===== -->
 					<v-card ref="meterCard" class="mb-3">
 						<v-card-text>
@@ -65,9 +65,9 @@ import HistorySection from './HistorySection.vue'
 import MeterConfig from './MeterConfig.vue'
 import TariffRow from './TariffRow.vue'
 import { roleMixin } from './role-mixin.js' // what the role sees (vue/_shared)
-import { visibleItems } from './role-view.js'
+import { lockedItems, lockedNeed } from './role-view.js'
 import SideTabs from './SideTabs.vue'
-import HiddenNote from './HiddenNote.vue' // the quiet line for the sections the role does not see (vue/_shared)
+import LockedCover from './LockedCover.vue' // the cover of a section the role cannot open (vue/_shared36)
 import { pluginOf, pathExists } from './workshop-ids.js' // Id nuevo o viejo del plugin
 import { dataOf } from './plugin-data.js'
 import { costText, fmtKwh } from './money.js' // amount in the language of DWC (test/money.test.js)
@@ -82,7 +82,7 @@ export default {
 	// what the previous person read (the tiles, the rate) stays in no data of the page (ESTANDAR 3.1); onSessionChange reads it again
 	sessionData: ['todayData', 'monthData', 'tariff', 'tilesError', 'tariffError'],
 	sessionErrors: ['tilesError', 'tariffError'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
-	components: { ErrorNotice, PageHeader, SideTabs, HiddenNote, ServiceNotice, StartupPanel, LiveSummary, RunningJob, BudgetCard, PeriodSection, JobsSection, HistorySection, MeterConfig, TariffRow },
+	components: { ErrorNotice, PageHeader, SideTabs, LockedCover, ServiceNotice, StartupPanel, LiveSummary, RunningJob, BudgetCard, PeriodSection, JobsSection, HistorySection, MeterConfig, TariffRow },
 	data() {
 		let medView = '';
 		try {
@@ -133,7 +133,12 @@ export default {
 			];
 		},
 		sections() {
-			return visibleItems(this.allSections, op => this.canDo(op));
+			// the sections above the role stay in the list, locked (they open a cover that says why)
+			return lockedItems(this.allSections, op => this.canDo(op));
+		},
+		// the role that opens the open section, or '' when this role may
+		lockedSection() {
+			return lockedNeed(this.allSections, this.section, op => this.canDo(op));
 		},
 		// the one error the summary tells (the tiles first): both reads usually fail for the same cause
 		readError() {

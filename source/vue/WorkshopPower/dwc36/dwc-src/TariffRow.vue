@@ -5,12 +5,12 @@
 			<span v-if="tariff.value_kwh" class="text-body-2">
 				{{ $t('plugins.WorkshopPower.consumption.rate') }} <b>{{ money(tariff.value_kwh) }} {{ tariff.currency }}</b> {{ $t('plugins.WorkshopPower.consumption.per_kwh') }}
 			</span>
-			<span v-else-if="!readFailed" class="text-body-2">{{ $t(canChange ? 'plugins.WorkshopPower.consumption.no_rate_enter_the_kwh_cost' : 'plugins.WorkshopPower.consumption.no_rate_ask_technician') }}</span>
-			<v-btn v-if="canChange" x-small text color="primary" class="ml-1" @click="open = !open">
+			<span v-else-if="!readFailed" class="text-body-2">{{ $t(canChange ? 'plugins.WorkshopPower.consumption.no_rate_enter_the_kwh_cost' : 'plugins.WorkshopPower.consumption.no_rate_set') }}</span>
+			<v-btn x-small text color="primary" class="ml-1" :disabled="!canChange" @click="open = !open">
 				{{ open ? $t('plugins.WorkshopPower.consumption.close') : $t('plugins.WorkshopPower.consumption.change') }}
 			</v-btn>
-			<!-- the editor is not drawn below technician: the reason is written where it would be (the "no rate" text already says it) -->
-			<lock-reason v-else-if="tariff.value_kwh" min="technician" class="ml-2" />
+			<!-- below technician the button is disabled and ONE reason says why (session = blue, role = gray, naming the role) -->
+			<lock-reason min="technician" class="ml-2" />
 		</div>
 		<v-expand-transition>
 			<div v-if="canChange" v-show="open">

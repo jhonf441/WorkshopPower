@@ -99,7 +99,7 @@
 		"nav_jobs": "Jobs",
 		"nav_history": "History",
 		"nav_meter": "Meter",
-		"no_rate_ask_technician": "No rate: ask a technician to enter the kWh cost.",
+		"no_rate_set": "No rate set.",
 		"jobs_title": "Finished jobs",
 		"jobs_subtitle": "Energy and cost of each job, compared with each other.",
 		"filter_all": "All",
@@ -179,7 +179,7 @@
 		"budget_invalid": "Enter a number greater than 0.",
 		"empty_title": "There are no meter readings yet",
 		"empty_text_tech": "Without a meter there is no consumption to show. Add one in Meter: you need the ID and local key of the Tuya device.",
-		"empty_text_other": "Without a meter there is no consumption to show. Ask a technician to set it up.",
+		"empty_text_other": "Without a meter there is no consumption to show.",
 		"stale_title": "The meter stopped answering",
 		"stale_text": "Check that it is on and connected to the WiFi. What you see is the last reading that arrived.",
 		"units_hint": "W is the power at this moment; kWh is the accumulated energy (power times time).",
@@ -445,7 +445,6 @@
 		"title": "This machine has no power meter",
 		"text": "Without a meter there is no consumption, cost or energy per job to show, so those sections are hidden. If you install a meter later, enable it here.",
 		"enable": "I have a Tuya meter",
-		"enabling": "Enabling...",
-		"admin_hint": "Changing the profile needs an administrator session."
+		"enabling": "Enabling..."
 	}
 }

@@ -8,9 +8,12 @@
 					<div class="font-weight-medium">{{ $t('plugins.WorkshopPower.consumption.empty_title') }}</div>
 					<div class="text-caption grey--text">{{ $t(canConfigure ? 'plugins.WorkshopPower.consumption.empty_text_tech' : 'plugins.WorkshopPower.consumption.empty_text_other') }}</div>
 				</div>
-				<v-btn v-if="canConfigure" small color="primary" @click="$emit('configure')">
-					<v-icon small left>mdi-cog</v-icon>{{ $t('plugins.WorkshopPower.consumption.meter') }}
-				</v-btn>
+				<div class="live-notice-actions">
+					<v-btn small color="primary" :disabled="!canConfigure" @click="$emit('configure')">
+						<v-icon small left>mdi-cog</v-icon>{{ $t('plugins.WorkshopPower.consumption.meter') }}
+					</v-btn>
+					<lock-reason min="technician" />
+				</div>
 			</div>
 			<div v-else-if="state === 'dot-stale'" class="live-notice live-notice-stale" role="status">
 				<v-icon large color="warning" aria-hidden="true">mdi-wifi-alert</v-icon>
@@ -18,9 +21,12 @@
 					<div class="font-weight-medium">{{ $t('plugins.WorkshopPower.consumption.stale_title') }}</div>
 					<div class="text-caption grey--text">{{ $t('plugins.WorkshopPower.consumption.stale_text') }}</div>
 				</div>
-				<v-btn v-if="canConfigure" small outlined @click="$emit('configure')">
-					<v-icon small left>mdi-cog</v-icon>{{ $t('plugins.WorkshopPower.consumption.meter') }}
-				</v-btn>
+				<div class="live-notice-actions">
+					<v-btn small outlined :disabled="!canConfigure" @click="$emit('configure')">
+						<v-icon small left>mdi-cog</v-icon>{{ $t('plugins.WorkshopPower.consumption.meter') }}
+					</v-btn>
+					<lock-reason min="technician" />
+				</div>
 			</div>
 
 			<div class="live-grid">
@@ -78,8 +84,10 @@
 
 <script>
 import { fmtKwh, costText } from './money.js'
+import LockReason from './LockReason.vue' // vue/_shared36
 
 export default {
+	components: { LockReason },
 	props: {
 		value: { type: String, default: '' }, // meter chosen: '' = the main one, 'total' or a key
 		state: { type: String, default: 'dot-off' }, // dot-ok | dot-stale | dot-off
@@ -124,6 +132,12 @@ export default {
 .med-toggle {
 	flex-wrap: wrap;
 	height: auto;
+}
+.live-notice-actions {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
 }
 .live-notice {
 	display: flex;
