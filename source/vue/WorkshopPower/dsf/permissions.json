@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "plugin": "WorkshopPower",
+  "namespace": "power",
+  "prefixes": [
+    "energy",
+    "meter",
+    "power"
+  ],
+  "ui": "ui:power:open",
+  "operations": [
+    "activity.list",
+    "energy.history",
+    "energy.period",
+    "energy.rate_get",
+    "energy.rate_set",
+    "meter.forget",
+    "meter.get",
+    "meter.save",
+    "meter.search",
+    "meter.settings",
+    "meter.test",
+    "profile.set",
+    "view.heartbeat"
+  ],
+  "shared": [
+    "activity.list",
+    "profile.set",
+    "view.heartbeat"
+  ],
+  "restricted": [],
+  "targets": [
+    "power:meter"
+  ],
+  "profiles": {
+    "readonly": {
+      "title": "PowerReadOnly",
+      "capabilities": [
+        "activity.view",
+        "energy.view"
+      ]
+    },
+    "operator": {
+      "title": "PowerOperator",
+      "capabilities": [
+        "activity.view",
+        "energy.view"
+      ]
+    },
+    "admin": {
+      "title": "PowerAdmin",
+      "capabilities": [
+        "activity.view",
+        "energy.meter",
+        "energy.view"
+      ]
+    }
+  }
+}
