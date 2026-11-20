@@ -12,7 +12,7 @@
 					<v-btn small color="primary" :disabled="!canConfigure" @click="$emit('configure')">
 						<v-icon small left>mdi-cog</v-icon>{{ $t('plugins.WorkshopPower.consumption.meter') }}
 					</v-btn>
-					<lock-reason min="technician" />
+					<lock-reason :ops="meterOps" min="technician" :subject="$t('plugins.WorkshopPower.subjects.meter')" />
 				</div>
 			</div>
 			<div v-else-if="state === 'dot-stale'" class="live-notice live-notice-stale" role="status">
@@ -25,7 +25,7 @@
 					<v-btn small outlined :disabled="!canConfigure" @click="$emit('configure')">
 						<v-icon small left>mdi-cog</v-icon>{{ $t('plugins.WorkshopPower.consumption.meter') }}
 					</v-btn>
-					<lock-reason min="technician" />
+					<lock-reason :ops="meterOps" min="technician" :subject="$t('plugins.WorkshopPower.subjects.meter')" />
 				</div>
 			</div>
 
@@ -85,6 +85,7 @@
 <script>
 import { fmtKwh, costText } from './money.js'
 import LockReason from './LockReason.vue' // vue/_shared36
+import { METER_OPS } from './access-groups.js'
 
 export default {
 	components: { LockReason },
@@ -103,7 +104,7 @@ export default {
 		canConfigure: { type: Boolean, default: false }
 	},
 	data() {
-		return { NBSP: ' ' }
+		return { NBSP: ' ', meterOps: METER_OPS }
 	},
 	computed: {
 		chosen: {

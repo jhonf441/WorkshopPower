@@ -68,7 +68,7 @@
 			</template>
 			<div v-else class="history-empty">
 				<v-icon large color="grey" aria-hidden="true">mdi-chart-timeline-variant</v-icon>
-				<lock-reason v-if="!loading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" />
+				<lock-reason v-if="!loading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" :subject="$t('plugins.WorkshopPower.subjects.history')" />
 				<div v-else class="text-body-2">{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_readings_in_the_range') }}</div>
 			</div>
 		</v-card-text>

@@ -1,4 +1,12 @@
 {
+	"subjects": {
+		"history": "Historial",
+		"jobs": "Trabajos",
+		"meter": "Medidor de energía",
+		"period": "Resumen del periodo",
+		"profile": "Perfil de energía",
+		"tariff": "Tarifa"
+	},
 	"consumption": {
 		"previous_year": "año anterior",
 		"previous_month": "mes anterior",

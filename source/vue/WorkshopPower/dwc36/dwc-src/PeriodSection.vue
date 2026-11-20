@@ -63,7 +63,7 @@
 			/>
 			<div v-else class="period-empty">
 				<v-icon large color="grey" aria-hidden="true">mdi-chart-bar</v-icon>
-				<lock-reason v-if="!periodLoading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" />
+				<lock-reason v-if="!periodLoading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" :subject="$t('plugins.WorkshopPower.subjects.period')" />
 				<div v-else class="text-body-2">{{ periodLoading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_data_for_this_period') }}</div>
 			</div>
 			<div class="text-caption grey--text mt-1">

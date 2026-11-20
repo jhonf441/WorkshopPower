@@ -1,4 +1,12 @@
 {
+	"subjects": {
+		"history": "History",
+		"jobs": "Jobs",
+		"meter": "Power meter",
+		"period": "Period summary",
+		"profile": "Power profile",
+		"tariff": "Tariff"
+	},
 	"consumption": {
 		"previous_year": "previous year",
 		"previous_month": "previous month",

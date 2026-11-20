@@ -7,7 +7,7 @@
 		<div class="st-layout">
 			<side-tabs v-model="section" :items="sections" />
 			<div class="st-body">
-				<locked-cover v-if="lockedSection" :needed="lockedSection" />
+				<locked-cover v-if="lockedSection" :needed="lockedSection" :items="sections" :value="section" />
 				<div v-if="!lockedSection && section === 'summary'">
 					<!-- the tiles or the rate could not be read: the cause in a sentence (a refusal is the calm note of its cause), never silent zeros -->
 					<error-notice v-if="readError" :error="readError" retry @retry="loadSummaries(); loadTariff()" />
@@ -15,7 +15,7 @@
 					<live-summary
 						v-model="meterView" :state="liveState" :text="liveText" :has-data="!!consumptionCurrent" :view="view" :meters="listMeters"
 						:cost-hour="costHour" :today-kwh="todayKwh" :month-kwh="monthKwh" :projection="projection" :tariff="tariff"
-						:can-configure="atLeast('technician')" @configure="goAMeter()"
+						:can-configure="canMeter" @configure="goAMeter()"
 					/>
 					<running-job :job="running" :tariff="tariff" :meter="meterView" :watts="view.w" />
 					<budget-card :limit="budgetLimit" :month-kwh="monthKwh" :projection="projection" :tariff="tariff" @update:limit="setBudget" />
@@ -64,7 +64,9 @@ import JobsSection from './JobsSection.vue'
 import HistorySection from './HistorySection.vue'
 import MeterConfig from './MeterConfig.vue'
 import TariffRow from './TariffRow.vue'
-import { roleMixin } from './role-mixin.js' // what the role sees (vue/_shared)
+import { accessCanMixin } from './reason-mixin.js' // what the role and the service say (vue/_shared36)
+import { workshopCan } from './workshop-auth.js'
+import { METER_OPS, SCREEN_OPS } from './access-groups.js'
 import { lockedItems, lockedNeed } from './role-view.js'
 import SideTabs from './SideTabs.vue'
 import LockedCover from './LockedCover.vue' // the cover of a section the role cannot open (vue/_shared36)
@@ -78,7 +80,7 @@ import { sectionColor } from './section-colors.js' // the color of each section 
 import ErrorNotice from './ErrorNotice.vue' // vue/_shared36
 
 export default {
-	mixins: [roleMixin],
+	mixins: [accessCanMixin],
 	// what the previous person read (the tiles, the rate) stays in no data of the page (ESTANDAR 3.1); onSessionChange reads it again
 	sessionData: ['todayData', 'monthData', 'tariff', 'tilesError', 'tariffError'],
 	sessionErrors: ['tilesError', 'tariffError'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
@@ -113,6 +115,10 @@ export default {
 		};
 	},
 	computed: {
+		// the meter group: the answer of the service for every operation of the group (the table of the role until it answers)
+		canMeter() {
+			return METER_OPS.every(op => this.canDo(op))
+		},
 		secColor() {
 			return sectionColor(this.section)
 		},
@@ -134,11 +140,11 @@ export default {
 		},
 		sections() {
 			// the sections above the role stay in the list, locked (they open a cover that says why)
-			return lockedItems(this.allSections, op => this.canDo(op));
+			return lockedItems(this.allSections, op => this.roleCan(op));
 		},
 		// the role that opens the open section, or '' when this role may
 		lockedSection() {
-			return lockedNeed(this.allSections, this.section, op => this.canDo(op));
+			return lockedNeed(this.allSections, this.section, op => this.roleCan(op));
 		},
 		// the one error the summary tells (the tiles first): both reads usually fail for the same cause
 		readError() {
@@ -275,6 +281,10 @@ export default {
 			}
 		}
 	},
+	created() {
+		// the same call the root of the page makes (one batch, one cache)
+		this.wantCan(SCREEN_OPS)
+	},
 	mounted() {
 		if (this.consumptionCurrent) {
 			this.lastTs = this.consumptionCurrent.ts;
@@ -299,6 +309,11 @@ export default {
 		clearInterval(this.timerHeartbeat);
 	},
 	methods: {
+		// what the TABLE of the role says (the side bar locks a section by role; the groups of buttons follow the service)
+		roleCan(op) {
+			void this.identityTick
+			return workshopCan(op)
+		},
 		// the person signed in / out or the role changed: the rate and the tiles are read again (the sections read their own data)
 		onSessionChange() {
 			this.loadTariff();

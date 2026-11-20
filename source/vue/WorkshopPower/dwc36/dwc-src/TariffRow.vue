@@ -10,7 +10,7 @@
 				{{ open ? $t('plugins.WorkshopPower.consumption.close') : $t('plugins.WorkshopPower.consumption.change') }}
 			</v-btn>
 			<!-- below technician the button is disabled and ONE reason says why (session = blue, role = gray, naming the role) -->
-			<lock-reason min="technician" class="ml-2" />
+			<lock-reason :ops="tariffOps" min="technician" class="ml-2" :subject="$t('plugins.WorkshopPower.subjects.tariff')" />
 		</div>
 		<v-expand-transition>
 			<div v-if="canChange" v-show="open">
@@ -45,13 +45,14 @@
 
 import ErrorNotice from './ErrorNotice.vue' // vue/_shared
 import { api } from './workshop-api.js'
-import { roleMixin } from './role-mixin.js' // vue/_shared
+import { accessCanMixin } from './reason-mixin.js' // the answers of the service, by operation (vue/_shared36)
+import { TARIFF_OPS } from './access-groups.js'
 import { formatMoney } from './money.js'
 import LockReason from './LockReason.vue' // vue/_shared36
 
 export default {
 	components: { LockReason, ErrorNotice },
-	mixins: [roleMixin],
+	mixins: [accessCanMixin],
 	sessionData: ['error', 'open'], // a refused save of the previous person is not shown to the next one
 	sessionErrors: ['error'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
 	props: {
@@ -65,12 +66,14 @@ export default {
 			value: this.tariff.value_kwh ? String(this.tariff.value_kwh) : '',
 			open: false,
 			saving: false,
-			error: null
+			error: null,
+			tariffOps: TARIFF_OPS
 		};
 	},
 	computed: {
+		// the answer of the service for the operation (the table of the role until it answers)
 		canChange() {
-			return this.atLeast('technician');
+			return TARIFF_OPS.every(op => this.canDo(op));
 		}
 	},
 	watch: {

@@ -101,7 +101,7 @@
 				</div>
 				<div v-else class="jobs-empty">
 					<v-icon large color="grey" aria-hidden="true">mdi-briefcase-clock-outline</v-icon>
-					<lock-reason v-if="!loading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" />
+					<lock-reason v-if="!loading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" :subject="$t('plugins.WorkshopPower.subjects.jobs')" />
 					<div v-else class="text-body-2">
 						{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t(hasActivity ? 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs' : 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs_no_activity') }}
 					</div>
