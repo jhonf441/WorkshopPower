@@ -1,78 +1,67 @@
 <template>
-	<!-- ===== Detailed history ===== -->
-	<v-card class="mb-3">
-		<v-card-text>
-			<div class="d-flex align-center justify-space-between flex-wrap" style="gap:8px">
-				<div class="text-subtitle-1 font-weight-medium">
-					<v-icon small class="mr-1" color="primary">mdi-chart-line</v-icon>{{ $t('plugins.WorkshopPower.consumption.detailed_history') }}
-				</div>
-				<range-picker v-model="rangeVal" />
-			</div>
+	<!-- ===== Detailed history: the card of the section (.st-body), its head with the range, the figures (.wf-stat) and the charts ===== -->
+	<div class="history">
+		<card-head icon="mdi-chart-line" :title="$t('plugins.WorkshopPower.consumption.detailed_history')">
+			<range-picker v-model="rangeVal" />
+		</card-head>
 
-			<div v-if="summary" class="span-tiles mt-3">
-				<div class="tile">
-					<div class="tile-label">{{ $t('plugins.WorkshopPower.consumption.consumed') }}</div>
-					<div class="tile-value">{{ fmtKwh(summary.consumption_kwh) }} <small>kWh</small></div>
-					<div class="tile-sub">{{ costOf(summary.consumption_kwh) || NBSP }}</div>
-				</div>
-				<div class="tile">
-					<div class="tile-label">{{ $t('plugins.WorkshopPower.consumption.average') }}</div>
-					<div class="tile-value">{{ summary.average_w != null ? summary.average_w.toFixed(0) : '--' }} <small>W</small></div>
-					<div class="tile-sub">{{ NBSP }}</div>
-				</div>
-				<div class="tile">
-					<div class="tile-label">{{ $t('plugins.WorkshopPower.consumption.peak') }}</div>
-					<div class="tile-value">{{ summary.peak_w != null ? summary.peak_w.toFixed(0) : '--' }} <small>W</small></div>
-					<div class="tile-sub">{{ NBSP }}</div>
-				</div>
-				<div class="tile">
-					<div class="tile-label">{{ $t('plugins.WorkshopPower.consumption.idle_label') }}</div>
-					<div class="tile-value">{{ idle ? idle.w.toFixed(0) : '--' }} <small>W</small></div>
-					<div class="tile-sub">{{ idle ? (costOf(idle.kwhDay) ? $t('plugins.WorkshopPower.consumption.idle_cost', { cost: costOf(idle.kwhDay) }) : $t('plugins.WorkshopPower.consumption.idle_sub', { kwh: fmtKwh(idle.kwhDay) })) : NBSP }}</div>
-				</div>
-				<div class="tile">
-					<div class="tile-label">{{ $t('plugins.WorkshopPower.consumption.readings') }}</div>
-					<div class="tile-value">{{ summary.samples }}</div>
-					<div class="tile-sub">{{ $t('plugins.WorkshopPower.consumption.one_every_30_s') }}</div>
-				</div>
+		<div v-if="summary" class="wf-stats span-tiles">
+			<div class="wf-stat">
+				<div class="wf-stat-label">{{ $t('plugins.WorkshopPower.consumption.consumed') }}</div>
+				<div class="wf-stat-value">{{ fmtKwh(summary.consumption_kwh) }} <span class="wp-unit">kWh</span></div>
+				<div class="wp-sub">{{ costOf(summary.consumption_kwh) || NBSP }}</div>
 			</div>
+			<div class="wf-stat">
+				<div class="wf-stat-label">{{ $t('plugins.WorkshopPower.consumption.average') }}</div>
+				<div class="wf-stat-value">{{ summary.average_w != null ? summary.average_w.toFixed(0) : '--' }} <span class="wp-unit">W</span></div>
+				<div class="wp-sub">{{ NBSP }}</div>
+			</div>
+			<div class="wf-stat">
+				<div class="wf-stat-label">{{ $t('plugins.WorkshopPower.consumption.peak') }}</div>
+				<div class="wf-stat-value">{{ summary.peak_w != null ? summary.peak_w.toFixed(0) : '--' }} <span class="wp-unit">W</span></div>
+				<div class="wp-sub">{{ NBSP }}</div>
+			</div>
+			<div class="wf-stat">
+				<div class="wf-stat-label">{{ $t('plugins.WorkshopPower.consumption.idle_label') }}</div>
+				<div class="wf-stat-value">{{ idle ? idle.w.toFixed(0) : '--' }} <span class="wp-unit">W</span></div>
+				<div class="wp-sub">{{ idle ? (costOf(idle.kwhDay) ? $t('plugins.WorkshopPower.consumption.idle_cost', { cost: costOf(idle.kwhDay) }) : $t('plugins.WorkshopPower.consumption.idle_sub', { kwh: fmtKwh(idle.kwhDay) })) : NBSP }}</div>
+			</div>
+			<div class="wf-stat">
+				<div class="wf-stat-label">{{ $t('plugins.WorkshopPower.consumption.readings') }}</div>
+				<div class="wf-stat-value">{{ summary.samples }}</div>
+				<div class="wp-sub">{{ $t('plugins.WorkshopPower.consumption.one_every_30_s') }}</div>
+			</div>
+		</div>
 
-			<template v-if="serial.length > 1">
-				<div class="text-caption grey--text mt-3 mb-1 d-flex align-center" style="gap:4px">
-					{{ $t('plugins.WorkshopPower.consumption.power_w') }}
-					<help-tip :title="$t('plugins.WorkshopPower.consumption.detailed_history')">
-						<p class="text-body-2 mb-0">
-							{{ $t('plugins.WorkshopPower.consumption.gaps_in_the_line_are_periods') }}
-							<span v-if="serialStepS">{{ $t('plugins.WorkshopPower.consumption.long_range_averaged_every', { minutes: serialStepMin }) }}</span>
-							{{ $t('plugins.WorkshopPower.consumption.wheel_or_pinch_to_zoom') }}
-						</p>
-					</help-tip>
-				</div>
-				<detail-chart
-					:history="serialPower"
-					color="#FFB300" unit="W" :label="$t('plugins.WorkshopPower.consumption.power')"
-					:limit="summary ? summary.peak_w : null" :limit-label="$t('plugins.WorkshopPower.consumption.peak_lower')"
-					:height="220"
-				/>
-				<v-row dense class="mt-2">
-					<v-col cols="12" sm="6">
-						<div class="text-caption grey--text mb-1">{{ $t('plugins.WorkshopPower.consumption.voltage_v') }}</div>
-						<detail-chart :history="serialVoltage" color="#29B6F6" unit="V" :label="$t('plugins.WorkshopPower.consumption.voltage')" :height="160" />
-					</v-col>
-					<v-col cols="12" sm="6">
-						<div class="text-caption grey--text mb-1">{{ $t('plugins.WorkshopPower.consumption.current_a') }}</div>
-						<detail-chart :history="serialCurrent" color="#66BB6A" unit="A" :label="$t('plugins.WorkshopPower.consumption.current')" :height="160" />
-					</v-col>
-				</v-row>
-				<div v-if="idle" class="text-caption grey--text mt-1">{{ $t('plugins.WorkshopPower.consumption.idle_hint') }}</div>
-			</template>
-			<div v-else class="history-empty">
-				<v-icon large color="grey" aria-hidden="true">mdi-chart-timeline-variant</v-icon>
-				<lock-reason v-if="!loading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" :subject="$t('plugins.WorkshopPower.subjects.history')" />
-				<div v-else class="text-body-2">{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_readings_in_the_range') }}</div>
+		<template v-if="serial.length > 1">
+			<div class="text-caption grey--text mt-3 mb-1 d-flex align-center" style="gap:4px">
+				{{ $t('plugins.WorkshopPower.consumption.power_w') }}
 			</div>
-		</v-card-text>
-	</v-card>
+			<help-line class="mb-1">{{ $t('plugins.WorkshopPower.consumption.gaps_in_the_line_are_periods') }} <span v-if="serialStepS">{{ $t('plugins.WorkshopPower.consumption.long_range_averaged_every', { minutes: serialStepMin }) }}</span> {{ $t('plugins.WorkshopPower.consumption.wheel_or_pinch_to_zoom') }}</help-line>
+			<detail-chart
+				:history="serialPower"
+				color="#FFB300" unit="W" :label="$t('plugins.WorkshopPower.consumption.power')"
+				:limit="summary ? summary.peak_w : null" :limit-label="$t('plugins.WorkshopPower.consumption.peak_lower')"
+				:height="220"
+			/>
+			<v-row dense class="mt-2">
+				<v-col cols="12" sm="6">
+					<div class="text-caption grey--text mb-1">{{ $t('plugins.WorkshopPower.consumption.voltage_v') }}</div>
+					<detail-chart :history="serialVoltage" color="#29B6F6" unit="V" :label="$t('plugins.WorkshopPower.consumption.voltage')" :height="160" />
+				</v-col>
+				<v-col cols="12" sm="6">
+					<div class="text-caption grey--text mb-1">{{ $t('plugins.WorkshopPower.consumption.current_a') }}</div>
+					<detail-chart :history="serialCurrent" color="#66BB6A" unit="A" :label="$t('plugins.WorkshopPower.consumption.current')" :height="160" />
+				</v-col>
+			</v-row>
+		</template>
+		<div v-else class="history-empty">
+			<v-icon large color="grey" aria-hidden="true">mdi-chart-timeline-variant</v-icon>
+			<lock-reason v-if="!loading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" :subject="$t('plugins.WorkshopPower.subjects.history')" />
+			<div v-else class="text-body-2">{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_readings_in_the_range') }}</div>
+		</div>
+		<help-fold class="mt-3" :title="t('history_help_title')" :what="t('history_help_what')" :why="t('history_help_for')" :if-missing="t('history_help_missing')" :how="t('history_help_how')" />
+	</div>
 </template>
 
 <script>
@@ -81,7 +70,9 @@ import { roleMixin } from './role-mixin.js' // what the role may do (vue/_shared
 import { isRefusal, refusalNow, refusalCauseNow } from './session-refusal.js' // a refusal told by its cause: isRefusal, refusalNow, refusalCauseNow
 import DetailChart from './DetailChart.vue'
 import RangePicker from './RangePicker.vue' // vue/_shared36
-import HelpTip from './HelpTip.vue' // vue/_shared36
+import CardHead from './CardHead.vue' // the head of a card (vue/_shared36)
+import HelpLine from './HelpLine.vue' // vue/_shared36
+import HelpFold from './HelpFold.vue' // vue/_shared36
 import { relative, resolve, asTexts } from './range-picker.js' // vue/_shared36
 import { fmtKwh, costText } from './money.js'
 import { asDateHourLocal } from './dates.js'
@@ -98,7 +89,7 @@ export default {
 	// what the previous person read stays in no data of the section (ESTANDAR 3.1); onSessionChange reads it again
 	sessionData: ['summary', 'serial', 'serialStepS', 'refused'],
 	sessionErrors: ['refused'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
-	components: { LockReason, DetailChart, RangePicker, HelpTip },
+	components: { HelpLine, LockReason, DetailChart, RangePicker, CardHead, HelpFold },
 	props: {
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
 		meter: { type: String, default: '' }
@@ -153,6 +144,9 @@ export default {
 	},
 	methods: {
 		fmtKwh,
+		t(k) {
+			return this.$t('plugins.WorkshopPower.consumption.' + k)
+		},
 		// the person signed in / out or the role changed: the readings are read again
 		onSessionChange() {
 			this.search()
@@ -200,53 +194,6 @@ export default {
 </script>
 
 <style scoped>
-.span-tiles {
-	display: grid;
-	grid-template-columns: repeat(5, minmax(0, 1fr));
-	gap: 10px;
-}
-@media (max-width: 900px) {
-	.span-tiles {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-	}
-}
-@media (max-width: 600px) {
-	.span-tiles {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-}
-.tile {
-	background: rgba(128, 128, 128, 0.09);
-	border-radius: 8px;
-	padding: 10px 12px;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	min-width: 0;
-}
-.tile-label {
-	font-size: 12px;
-	color: var(--tp-faint, #9e9e9e);
-}
-.tile-value {
-	font-size: 22px;
-	font-weight: 500;
-	line-height: 1.25;
-	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
-}
-.tile-value small {
-	font-size: 13px;
-	color: var(--tp-faint, #9e9e9e);
-	font-weight: 400;
-}
-.tile-sub {
-	font-size: 12px;
-	color: var(--tp-faint2, #bdbdbd);
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
 .history-empty {
 	display: flex;
 	flex-direction: column;

@@ -1,113 +1,104 @@
 <template>
+	<!-- the card of the section (.st-body): its head, one line, the running job, the filters and the totals, the list (each a .wf-group) -->
 	<div class="jobs-section">
+		<card-head icon="mdi-briefcase-clock-outline" :title="$t('plugins.WorkshopPower.consumption.jobs_title')">
+			<v-btn small outlined :disabled="!filtered.length" @click="exportCsv()">
+				<v-icon small left>mdi-download</v-icon>{{ $t('plugins.WorkshopPower.consumption.export_csv') }}
+			</v-btn>
+		</card-head>
+		<p class="wp-line">{{ $t('plugins.WorkshopPower.consumption.jobs_subtitle') }}</p>
+
 		<running-job :job="running" :tariff="tariff" :meter="meter" :watts="watts" />
 
-		<v-card class="mb-3">
-			<v-card-text>
-				<div class="jobs-head">
-					<div class="jobs-title">
-						<v-icon small class="mr-1" color="primary">mdi-briefcase-clock-outline</v-icon>
-						<span class="text-subtitle-1 font-weight-medium">{{ $t('plugins.WorkshopPower.consumption.jobs_title') }}</span>
-					</div>
-					<v-btn small outlined :disabled="!filtered.length" @click="exportCsv()">
-						<v-icon small left>mdi-download</v-icon>{{ $t('plugins.WorkshopPower.consumption.export_csv') }}
-					</v-btn>
-				</div>
-				<div class="text-caption grey--text mb-2">{{ $t('plugins.WorkshopPower.consumption.jobs_subtitle') }}</div>
+		<div class="wf-group jobs-main">
+			<div class="jobs-filters">
+				<v-btn-toggle v-model="days" mandatory dense color="primary">
+					<v-btn small :value="7">{{ $t('plugins.WorkshopPower.consumption.7_days') }}</v-btn>
+					<v-btn small :value="30">{{ $t('plugins.WorkshopPower.consumption.30_days') }}</v-btn>
+				</v-btn-toggle>
+				<v-btn-toggle v-if="modeButtons.length > 1" v-model="mode" mandatory dense color="primary" class="jobs-modes">
+					<v-btn small value="all">{{ $t('plugins.WorkshopPower.consumption.filter_all') }}</v-btn>
+					<v-btn v-for="m in modeButtons" :key="m" small :value="m">{{ groupName(m) }}</v-btn>
+				</v-btn-toggle>
+			</div>
+			<div class="jobs-filters mt-2">
+				<v-select
+					v-model="sort" :items="sortItems" :label="$t('plugins.WorkshopPower.consumption.sort_label')"
+					dense outlined hide-details class="jobs-sort"
+				/>
+				<v-btn-toggle v-model="grouping" mandatory dense color="primary" class="jobs-grouping" :aria-label="t('group_label')">
+					<v-btn small value="none">{{ t('group_none') }}</v-btn>
+					<v-btn small value="mode">{{ t('group_mode') }}</v-btn>
+				</v-btn-toggle>
+				<v-checkbox v-model="hideCancelled" dense hide-details class="mt-0 pt-0" :label="$t('plugins.WorkshopPower.consumption.hide_cancelled')" />
+			</div>
 
-				<div class="jobs-filters">
-					<v-btn-toggle v-model="days" mandatory dense color="primary">
-						<v-btn small :value="7">{{ $t('plugins.WorkshopPower.consumption.7_days') }}</v-btn>
-						<v-btn small :value="30">{{ $t('plugins.WorkshopPower.consumption.30_days') }}</v-btn>
-					</v-btn-toggle>
-					<v-btn-toggle v-if="modeButtons.length > 1" v-model="mode" mandatory dense color="primary" class="jobs-modes">
-						<v-btn small value="all">{{ $t('plugins.WorkshopPower.consumption.filter_all') }}</v-btn>
-						<v-btn v-for="m in modeButtons" :key="m" small :value="m">{{ groupName(m) }}</v-btn>
-					</v-btn-toggle>
-				</div>
-				<div class="jobs-filters mt-2">
-					<v-select
-						v-model="sort" :items="sortItems" :label="$t('plugins.WorkshopPower.consumption.sort_label')"
-						dense outlined hide-details class="jobs-sort"
-					/>
-					<v-btn-toggle v-model="grouping" mandatory dense color="primary" class="jobs-grouping" :aria-label="t('group_label')">
-						<v-btn small value="none">{{ t('group_none') }}</v-btn>
-						<v-btn small value="mode">{{ t('group_mode') }}</v-btn>
-					</v-btn-toggle>
-					<v-checkbox v-model="hideCancelled" dense hide-details class="mt-0 pt-0" :label="$t('plugins.WorkshopPower.consumption.hide_cancelled')" />
-					<help-tip :title="t('group_label')">
-						<p v-for="k in ['what', 'for', 'missing', 'how']" :key="k" class="text-body-2 mb-1">{{ t('group_help_' + k) }}</p>
-					</help-tip>
-				</div>
+			<job-summary v-if="filtered.length" :totals="sums" :breakdown="breakdown" :tariff="tariff" class="mt-3" />
+		</div>
 
-				<job-summary v-if="filtered.length" :totals="sums" :breakdown="breakdown" :tariff="tariff" class="mt-3" />
-			</v-card-text>
-		</v-card>
-
-		<v-card class="mb-3">
-			<v-card-text>
-				<template v-if="filtered.length && grouping === 'mode'">
-					<section v-for="g in modeGroups" :key="g.id" class="mode-group" :data-group="g.id">
-						<div
-							class="mode-head" role="button" tabindex="0" :aria-expanded="isCollapsed(g.id) ? 'false' : 'true'"
-							:aria-label="$t('plugins.WorkshopPower.consumption.group_toggle', { name: groupName(g.id) })"
-							@click="toggleGroup(g.id)" @keydown.enter.prevent="toggleGroup(g.id)" @keydown.space.prevent="toggleGroup(g.id)"
-						>
-							<v-icon small aria-hidden="true">{{ isCollapsed(g.id) ? 'mdi-chevron-right' : 'mdi-chevron-down' }}</v-icon>
-							<span class="mode-dot" :style="{ background: dotOf(g.id) }" aria-hidden="true" />
-							<span class="mode-name">{{ groupName(g.id) }}</span>
-							<span class="mode-figures">
-								{{ $t('plugins.WorkshopPower.consumption.n_jobs', { n: g.n }) }} &middot; {{ fmtKwh(g.kwh) }} kWh<span v-if="costOf(g.kwh)"> &middot; {{ costOf(g.kwh) }}</span>
-							</span>
-							<span class="mode-avg">{{ $t('plugins.WorkshopPower.consumption.group_avg', { kwh: fmtKwh(g.avgKwh) }) }}<span v-if="costOf(g.avgKwh)"> &middot; {{ costOf(g.avgKwh) }}</span></span>
-						</div>
-						<div v-if="!isCollapsed(g.id)" class="mode-body">
-							<job-item
-								v-for="t in g.items" :key="t.key" :job="t" :expanded="!!open[t.key]" :power="powers[t.key] || null"
-								:compare="compareOf(t)" :tariff="tariff" :max-kwh="maxKwh" @toggle="toggleJob(t)"
-							/>
-						</div>
-					</section>
-					<div class="mode-head mode-total">
-						<span class="mode-name">{{ t('group_total') }}</span>
+		<div class="wf-group jobs-list">
+			<template v-if="filtered.length && grouping === 'mode'">
+				<section v-for="g in modeGroups" :key="g.id" class="mode-group" :data-group="g.id">
+					<div
+						class="mode-head" role="button" tabindex="0" :aria-expanded="isCollapsed(g.id) ? 'false' : 'true'"
+						:aria-label="$t('plugins.WorkshopPower.consumption.group_toggle', { name: groupName(g.id) })"
+						@click="toggleGroup(g.id)" @keydown.enter.prevent="toggleGroup(g.id)" @keydown.space.prevent="toggleGroup(g.id)"
+					>
+						<v-icon small aria-hidden="true">{{ isCollapsed(g.id) ? 'mdi-chevron-right' : 'mdi-chevron-down' }}</v-icon>
+						<span class="mode-dot" :style="{ background: dotOf(g.id) }" aria-hidden="true" />
+						<span class="mode-name">{{ groupName(g.id) }}</span>
 						<span class="mode-figures">
-							{{ $t('plugins.WorkshopPower.consumption.n_jobs', { n: grand.n }) }} &middot; {{ fmtKwh(grand.kwh) }} kWh<span v-if="costOf(grand.kwh)"> &middot; {{ costOf(grand.kwh) }}</span>
+							{{ $t('plugins.WorkshopPower.consumption.n_jobs', { n: g.n }) }} &middot; {{ fmtKwh(g.kwh) }} kWh<span v-if="costOf(g.kwh)"> &middot; {{ costOf(g.kwh) }}</span>
 						</span>
-						<span class="mode-avg">{{ $t('plugins.WorkshopPower.consumption.group_avg', { kwh: fmtKwh(grand.avgKwh) }) }}<span v-if="costOf(grand.avgKwh)"> &middot; {{ costOf(grand.avgKwh) }}</span></span>
+						<span class="mode-avg">{{ $t('plugins.WorkshopPower.consumption.group_avg', { kwh: fmtKwh(g.avgKwh) }) }}<span v-if="costOf(g.avgKwh)"> &middot; {{ costOf(g.avgKwh) }}</span></span>
 					</div>
-					<div class="text-caption grey--text mt-1">{{ t('job_tap_hint') }} {{ t('units_hint') }}</div>
-				</template>
-				<template v-else-if="filtered.length">
-					<template v-for="g in groups">
-						<!-- more than 8 jobs, newest first: one header per day with the totals of that day -->
-						<div v-if="g.day" :key="'d' + g.day" class="job-day">
-							<span class="font-weight-medium">{{ g.date }}</span>
-							<span>{{ $t('plugins.WorkshopPower.consumption.n_jobs', { n: g.n }) }} &middot; {{ fmtKwh(g.kwh) }} kWh<span v-if="costOf(g.kwh)"> &middot; {{ costOf(g.kwh) }}</span></span>
-						</div>
+					<div v-if="!isCollapsed(g.id)" class="mode-body">
 						<job-item
 							v-for="t in g.items" :key="t.key" :job="t" :expanded="!!open[t.key]" :power="powers[t.key] || null"
 							:compare="compareOf(t)" :tariff="tariff" :max-kwh="maxKwh" @toggle="toggleJob(t)"
 						/>
-					</template>
-					<div class="text-caption grey--text mt-1">{{ $t('plugins.WorkshopPower.consumption.job_tap_hint') }} {{ $t('plugins.WorkshopPower.consumption.units_hint') }}</div>
-					<v-btn v-if="sorted.length > LIMIT" small text color="primary" class="mt-1" @click="showAll = !showAll">
-						{{ showAll ? $t('plugins.WorkshopPower.consumption.see_less') : $t('plugins.WorkshopPower.consumption.see_all_n', { n: sorted.length }) }}
-					</v-btn>
-				</template>
-				<div v-else-if="jobs.length" class="jobs-empty">
-					<v-icon large color="grey" aria-hidden="true">mdi-filter-off-outline</v-icon>
-					<div class="text-body-2">{{ $t('plugins.WorkshopPower.consumption.no_jobs_in_filter') }}</div>
-					<v-btn small outlined @click="clearFilters()">{{ $t('plugins.WorkshopPower.consumption.clear_filters') }}</v-btn>
-				</div>
-				<div v-else class="jobs-empty">
-					<v-icon large color="grey" aria-hidden="true">mdi-briefcase-clock-outline</v-icon>
-					<lock-reason v-if="!loading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" :subject="$t('plugins.WorkshopPower.subjects.jobs')" />
-					<div v-else class="text-body-2">
-						{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t(hasActivity ? 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs' : 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs_no_activity') }}
 					</div>
+				</section>
+				<div class="mode-head mode-total">
+					<span class="mode-name">{{ t('group_total') }}</span>
+					<span class="mode-figures">
+						{{ $t('plugins.WorkshopPower.consumption.n_jobs', { n: grand.n }) }} &middot; {{ fmtKwh(grand.kwh) }} kWh<span v-if="costOf(grand.kwh)"> &middot; {{ costOf(grand.kwh) }}</span>
+					</span>
+					<span class="mode-avg">{{ $t('plugins.WorkshopPower.consumption.group_avg', { kwh: fmtKwh(grand.avgKwh) }) }}<span v-if="costOf(grand.avgKwh)"> &middot; {{ costOf(grand.avgKwh) }}</span></span>
 				</div>
-			</v-card-text>
-		</v-card>
+				<div class="text-caption grey--text mt-1">{{ t('job_tap_hint') }} {{ t('units_hint') }}</div>
+			</template>
+			<template v-else-if="filtered.length">
+				<template v-for="g in groups">
+					<!-- more than 8 jobs, newest first: one header per day with the totals of that day -->
+					<div v-if="g.day" :key="'d' + g.day" class="job-day">
+						<span class="font-weight-medium">{{ g.date }}</span>
+						<span>{{ $t('plugins.WorkshopPower.consumption.n_jobs', { n: g.n }) }} &middot; {{ fmtKwh(g.kwh) }} kWh<span v-if="costOf(g.kwh)"> &middot; {{ costOf(g.kwh) }}</span></span>
+					</div>
+					<job-item
+						v-for="t in g.items" :key="t.key" :job="t" :expanded="!!open[t.key]" :power="powers[t.key] || null"
+						:compare="compareOf(t)" :tariff="tariff" :max-kwh="maxKwh" @toggle="toggleJob(t)"
+					/>
+				</template>
+				<div class="text-caption grey--text mt-1">{{ $t('plugins.WorkshopPower.consumption.job_tap_hint') }} {{ $t('plugins.WorkshopPower.consumption.units_hint') }}</div>
+				<v-btn v-if="sorted.length > LIMIT" small text color="primary" class="mt-1" @click="showAll = !showAll">
+					{{ showAll ? $t('plugins.WorkshopPower.consumption.see_less') : $t('plugins.WorkshopPower.consumption.see_all_n', { n: sorted.length }) }}
+				</v-btn>
+			</template>
+			<div v-else-if="jobs.length" class="jobs-empty">
+				<v-icon large color="grey" aria-hidden="true">mdi-filter-off-outline</v-icon>
+				<div class="text-body-2">{{ $t('plugins.WorkshopPower.consumption.no_jobs_in_filter') }}</div>
+				<v-btn small outlined @click="clearFilters()">{{ $t('plugins.WorkshopPower.consumption.clear_filters') }}</v-btn>
+			</div>
+			<div v-else class="jobs-empty">
+				<v-icon large color="grey" aria-hidden="true">mdi-briefcase-clock-outline</v-icon>
+				<lock-reason v-if="!loading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" :subject="$t('plugins.WorkshopPower.subjects.jobs')" />
+				<div v-else class="text-body-2">
+					{{ loading ? $t('plugins.WorkshopPower.consumption.loading') : $t(hasActivity ? 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs' : 'plugins.WorkshopPower.consumption.no_jobs_logged_yet_live_jobs_no_activity') }}
+				</div>
+			</div>
+		</div>
+		<help-fold class="mt-3" :title="t('group_label')" :what="t('group_help_what')" :why="t('group_help_for')" :if-missing="t('group_help_missing')" :how="t('group_help_how')" />
 	</div>
 </template>
 
@@ -116,9 +107,10 @@ import { api } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js' // what the role may do (vue/_shared)
 import { isRefusal, refusalNow, refusalCauseNow } from './session-refusal.js' // a refusal told by its cause: isRefusal, refusalNow, refusalCauseNow
 import RunningJob from './RunningJob.vue'
+import CardHead from './CardHead.vue' // the head of a card (vue/_shared36)
 import JobSummary from './JobSummary.vue'
 import JobItem from './JobItem.vue'
-import HelpTip from './HelpTip.vue' // vue/_shared36
+import HelpFold from './HelpFold.vue' // vue/_shared36
 import { fmtKwh, costText } from './money.js'
 import * as jobsLib from './jobs.js'
 import * as ins from './job-insights.js'
@@ -137,7 +129,7 @@ export default {
 	// what the previous person read stays in no data of the section (ESTANDAR 3.1); onSessionChange reads it again
 	sessionData: ['jobs', 'refused', 'open', 'powers'],
 	sessionErrors: ['refused'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
-	components: { LockReason, RunningJob, JobSummary, JobItem, HelpTip },
+	components: { HelpFold, LockReason, RunningJob, CardHead, JobSummary, JobItem },
 	props: {
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
 		meter: { type: String, default: '' }, // '' = the main meter, 'total' or the key of a meter
@@ -306,17 +298,6 @@ export default {
 </script>
 
 <style scoped>
-.jobs-head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	flex-wrap: wrap;
-	gap: 8px;
-}
-.jobs-title {
-	display: flex;
-	align-items: center;
-}
 .jobs-filters {
 	display: flex;
 	align-items: center;

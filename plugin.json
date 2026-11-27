@@ -2,7 +2,7 @@
   "id": "WorkshopPower",
   "name": "Power Usage",
   "author": "jhonf441",
-  "version": "2.8.11",
+  "version": "2.11.0",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/jhonf441/WorkshopPower",
   "tags": [
@@ -20,9 +20,9 @@
     "permissions.json"
   ],
   "dwcFiles": [
-    "css/WorkshopPower.c286476f.css",
-    "css/WorkshopPower.c286476f.css.gz",
-    "js/WorkshopPower.60eac99b.js",
-    "js/WorkshopPower.60eac99b.js.gz"
+    "css/WorkshopPower.9ef72606.css",
+    "css/WorkshopPower.9ef72606.css.gz",
+    "js/WorkshopPower.051acfb2.js",
+    "js/WorkshopPower.051acfb2.js.gz"
   ]
 }

@@ -59,6 +59,20 @@
 		"average_per_unit": "Promedio por {unit}",
 		"highest_usage_unit": "{unit} de mayor consumo",
 		"loading": "Cargando...",
+		"summary_help_title": "Consumo ahora",
+		"summary_help_what": "Qué es: la potencia en este instante (W), la energía de hoy y del mes (kWh) y lo que cuesta, con la tarifa que fijaste.",
+		"summary_help_for": "Para qué sirve: para saber cuánto gasta la máquina ahora y si vas a pasarte del tope del mes.",
+		"summary_help_missing": "Si falta: sin medidor o sin lecturas recientes no hay cifras; abre Medidor para conectarlo o revisarlo.",
+		"summary_help_how": "Cómo: elige Total o un medidor arriba; en el tope usa Cambiar para fijar un límite mensual; la tarifa se edita al pie.",
+		"period_help_title": "Energía por periodo",
+		"period_help_what": "Qué es: las barras muestran la energía de cada hora (día), día (mes) o mes (año), con su costo.",
+		"period_help_for": "Para qué sirve: para ver cuándo se gasta más y comparar con el periodo anterior.",
+		"period_help_missing": "Si falta: el periodo no tiene lecturas (máquina o medidor apagados); los huecos no cuentan como cero.",
+		"history_help_title": "Historial detallado",
+		"history_help_what": "Qué es: las lecturas del medidor en el rango elegido: potencia, voltaje y corriente. Los cortes en la línea son ratos sin lecturas.",
+		"history_help_for": "Para qué sirve: para ver el pico, el promedio y el nivel de reposo, el que baja la máquina cuando no trabaja (el 10% más bajo).",
+		"history_help_missing": "Si falta: en rangos largos cada punto es el promedio de varios minutos; los ratos sin lecturas dejan la línea cortada.",
+		"history_help_how": "Cómo: cambia el rango arriba; rueda o pellizco para hacer zoom en el gráfico.",
 		"tap_a_bar_hint": "Toca una barra para ver su valor. La raya gris es el {prev}, para comparar.",
 		"n_jobs": "{n} trabajos",
 		"see_all_n": "Ver los {n}",
@@ -194,8 +208,7 @@
 		"live_title": "Ahora",
 		"idle_label": "En reposo",
 		"idle_sub": "{kwh} kWh al día",
-		"idle_cost": "{cost} al día",
-		"idle_hint": "En reposo es el nivel al que baja la máquina cuando no trabaja (el 10% más bajo de las lecturas del rango)."
+		"idle_cost": "{cost} al día"
 	},
 	"common": {
 		"how_it_works": "Cómo funciona",
@@ -451,7 +464,7 @@
 	},
 	"noMeter": {
 		"title": "Esta máquina no tiene medidor de consumo",
-		"text": "Sin medidor no hay consumo, costo ni energia por trabajo que mostrar, asi que esas secciones estan ocultas. Si después instalas un medidor, activalo aqui.",
+		"text": "Sin medidor no hay consumo, costo ni energia por trabajo que mostrar, asi que esas secciones estan ocultas. Si después instalas un medidor, actívalo aqui.",
 		"enable": "Tengo un medidor Tuya",
 		"enabling": "Activando..."
 	}

@@ -1,36 +1,35 @@
 <template>
-	<v-card v-if="job" outlined class="running mb-3">
-		<v-card-text>
-			<div class="running-head">
-				<span class="running-dot" aria-hidden="true" />
-				<span class="running-title">{{ $t('plugins.WorkshopPower.consumption.running_title') }}</span>
-				<v-chip x-small outlined color="info">{{ $t(job.kind === 'live' ? 'plugins.WorkshopPower.consumption.running_live' : 'plugins.WorkshopPower.consumption.running_file') }}</v-chip>
-				<span v-if="job.name" class="running-name">{{ job.name }}</span>
+	<!-- a group of the card (summary and jobs): the job running now, its figures in the family's .wf-stat -->
+	<div v-if="job" class="wf-group running">
+		<div class="running-head">
+			<span class="wf-dot ok running-dot" aria-hidden="true" />
+			<h4 class="wf-group-title running-title">{{ $t('plugins.WorkshopPower.consumption.running_title') }}</h4>
+			<span class="wf-chip">{{ $t(job.kind === 'live' ? 'plugins.WorkshopPower.consumption.running_live' : 'plugins.WorkshopPower.consumption.running_file') }}</span>
+			<span v-if="job.name" class="running-name">{{ job.name }}</span>
+		</div>
+		<div class="wf-stats running-tiles">
+			<div class="wf-stat">
+				<div class="wf-stat-label">{{ $t('plugins.WorkshopPower.consumption.running_elapsed') }}</div>
+				<div class="wf-stat-value">{{ fmtDur(elapsedS) }}</div>
 			</div>
-			<div class="running-tiles">
-				<div class="running-tile">
-					<div class="running-label">{{ $t('plugins.WorkshopPower.consumption.running_elapsed') }}</div>
-					<div class="running-value">{{ fmtDur(elapsedS) }}</div>
-				</div>
-				<div class="running-tile">
-					<div class="running-label">{{ $t('plugins.WorkshopPower.consumption.running_energy') }}</div>
-					<div class="running-value">{{ data ? fmtKwh(data.kwh) : '--' }}<small> kWh</small></div>
-					<div class="running-sub">{{ data && data.peak != null ? $t('plugins.WorkshopPower.consumption.running_peak', { w: Math.round(data.peak) }) : NBSP }}</div>
-				</div>
-				<div class="running-tile">
-					<div class="running-label">{{ $t('plugins.WorkshopPower.consumption.running_cost') }}</div>
-					<div class="running-value running-cost">{{ (data && costOf(data.kwh)) || '--' }}</div>
-					<div class="running-sub">{{ costOf(1) ? NBSP : $t('plugins.WorkshopPower.consumption.running_no_tariff') }}</div>
-				</div>
-				<div class="running-tile">
-					<div class="running-label">{{ $t('plugins.WorkshopPower.consumption.running_power') }}</div>
-					<div class="running-value">{{ watts != null ? Math.round(watts) : '--' }}<small> W</small></div>
-					<div class="running-sub">{{ pace || NBSP }}</div>
-				</div>
+			<div class="wf-stat">
+				<div class="wf-stat-label">{{ $t('plugins.WorkshopPower.consumption.running_energy') }}</div>
+				<div class="wf-stat-value">{{ data ? fmtKwh(data.kwh) : '--' }} <span class="wp-unit">kWh</span></div>
+				<div class="wp-sub">{{ data && data.peak != null ? $t('plugins.WorkshopPower.consumption.running_peak', { w: Math.round(data.peak) }) : NBSP }}</div>
 			</div>
-			<div v-if="loaded && !data" class="running-note">{{ $t('plugins.WorkshopPower.consumption.running_no_readings') }}</div>
-		</v-card-text>
-	</v-card>
+			<div class="wf-stat">
+				<div class="wf-stat-label">{{ $t('plugins.WorkshopPower.consumption.running_cost') }}</div>
+				<div class="wf-stat-value">{{ (data && costOf(data.kwh)) || '--' }}</div>
+				<div class="wp-sub">{{ costOf(1) ? NBSP : $t('plugins.WorkshopPower.consumption.running_no_tariff') }}</div>
+			</div>
+			<div class="wf-stat">
+				<div class="wf-stat-label">{{ $t('plugins.WorkshopPower.consumption.running_power') }}</div>
+				<div class="wf-stat-value">{{ watts != null ? Math.round(watts) : '--' }} <span class="wp-unit">W</span></div>
+				<div class="wp-sub">{{ pace || NBSP }}</div>
+			</div>
+		</div>
+		<div v-if="loaded && !data" class="wp-note">{{ $t('plugins.WorkshopPower.consumption.running_no_readings') }}</div>
+	</div>
 </template>
 
 <script>
@@ -49,7 +48,7 @@ export default {
 		watts: { type: Number, default: null } // power now (live reading)
 	},
 	data() {
-		return { NBSP: ' ', data: null, loaded: false, now: Date.now(), timerTick: null, timerLoad: null }
+		return { NBSP: ' ', data: null, loaded: false, now: Date.now(), timerTick: null, timerLoad: null }
 	},
 	computed: {
 		elapsedS() {
@@ -105,77 +104,29 @@ export default {
 </script>
 
 <style scoped>
-.running {
-	border-left: 1px solid rgba(128, 128, 128, 0.3) !important;
-}
 .running-head {
 	display: flex;
 	align-items: center;
 	flex-wrap: wrap;
 	gap: 6px 8px;
-	margin-bottom: 10px;
+	margin-bottom: 8px;
 }
 .running-title {
-	font-weight: 500;
+	margin: 0;
 }
 .running-name {
 	font-size: 13px;
-	color: var(--tp-faint, #9e9e9e);
+	opacity: 0.7;
 	overflow-wrap: anywhere;
 }
+/* the dot of the family (.wf-dot.ok) breathes while the job runs */
 .running-dot {
-	width: 9px;
-	height: 9px;
-	border-radius: 50%;
-	background: #66BB6A;
 	animation: pw-pulse 2s infinite;
 }
 @keyframes pw-pulse {
 	0% { box-shadow: 0 0 0 0 rgba(102, 187, 106, 0.6); }
 	70% { box-shadow: 0 0 0 7px rgba(102, 187, 106, 0); }
 	100% { box-shadow: 0 0 0 0 rgba(102, 187, 106, 0); }
-}
-.running-tiles {
-	display: grid;
-	grid-template-columns: repeat(4, minmax(0, 1fr));
-	gap: 10px;
-}
-.running-tile {
-	background: rgba(128, 128, 128, 0.09);
-	border-radius: 8px;
-	padding: 8px 12px;
-	min-width: 0;
-}
-.running-label {
-	font-size: 12px;
-	color: var(--tp-faint, #9e9e9e);
-}
-.running-value {
-	font-size: 20px;
-	font-weight: 500;
-	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
-}
-.running-value small {
-	font-size: 12px;
-	font-weight: 400;
-	color: var(--tp-faint, #9e9e9e);
-}
-.running-cost {
-	color: var(--tp-amber, #ffb300);
-}
-.running-sub,
-.running-note {
-	font-size: 12px;
-	color: var(--tp-faint, #9e9e9e);
-}
-.running-note {
-	margin-top: 8px;
-}
-@media (max-width: 600px) {
-	.running-tiles {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
 }
 @media (prefers-reduced-motion: reduce) {
 	.running-dot {

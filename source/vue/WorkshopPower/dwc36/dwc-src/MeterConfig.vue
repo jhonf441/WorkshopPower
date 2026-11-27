@@ -26,7 +26,7 @@
 							<div class="editor-titles">
 								<div class="editor-title">
 									<span class="text-subtitle-1">{{ isNew ? $t('plugins.WorkshopPower.meterConfig.new_meter_title') : $t('plugins.WorkshopPower.meterConfig.edit_meter_title', { name: currentSel ? currentSel.name : '' }) }}</span>
-									<v-chip x-small :color="isNew ? 'primary' : ''">{{ isNew ? $t('plugins.WorkshopPower.meterConfig.new_badge') : $t('plugins.WorkshopPower.meterConfig.editing_badge') }}</v-chip>
+									<v-chip small :color="isNew ? 'primary' : ''">{{ isNew ? $t('plugins.WorkshopPower.meterConfig.new_badge') : $t('plugins.WorkshopPower.meterConfig.editing_badge') }}</v-chip>
 								</div>
 								<div class="text-caption grey--text">{{ isNew ? $t('plugins.WorkshopPower.meterConfig.new_meter_sub') : $t('plugins.WorkshopPower.meterConfig.edit_meter_sub') }}</div>
 							</div>
@@ -66,7 +66,7 @@
 							<li>{{ $t('plugins.WorkshopPower.meterConfig.on_the_system_ssh_run_the') }}
 								<div class="command">
 									<code>cd ~ &amp;&amp; python3 -m tinytuya wizard</code>
-									<v-btn :aria-label="$t('plugins.WorkshopPower.shared.aria_copy')" x-small icon @click="copy('cd ~ && python3 -m tinytuya wizard')"><v-icon x-small>mdi-content-copy</v-icon></v-btn>
+									<v-btn :aria-label="$t('plugins.WorkshopPower.shared.aria_copy')" small icon @click="copy('cd ~ && python3 -m tinytuya wizard')"><v-icon small>mdi-content-copy</v-icon></v-btn>
 								</div>
 							</li>
 							<li>{{ $t('plugins.WorkshopPower.meterConfig.when_done_the_file') }} <code>~/devices.json</code> {{ $t('plugins.WorkshopPower.meterConfig.has_for_each_device_its') }} <b>id</b> {{ $t('plugins.WorkshopPower.meterConfig.and_its') }} <b>key</b> {{ $t('plugins.WorkshopPower.meterConfig.local_key_2') }}</li>
@@ -99,8 +99,8 @@
 								<v-icon small class="mr-2">mdi-wifi</v-icon>
 								<span class="text-body-2">{{ d.ip }}</span>
 								<span class="text-caption grey--text ml-2 meter-data">{{ d.id }} &middot; v{{ d.version || '?' }}</span>
-								<v-chip v-if="configuredOf(d)" x-small class="ml-2" color="success" text-color="black">{{ $t('plugins.WorkshopPower.meterConfig.already_configured', { name: configuredOf(d).name }) }}</v-chip>
-								<v-chip v-else-if="d.current" x-small class="ml-2" color="success" text-color="black">{{ $t('plugins.WorkshopPower.meterConfig.in_use') }}</v-chip>
+								<v-chip v-if="configuredOf(d)" small class="ml-2" color="success" text-color="black">{{ $t('plugins.WorkshopPower.meterConfig.already_configured', { name: configuredOf(d).name }) }}</v-chip>
+								<v-chip v-else-if="d.current" small class="ml-2" color="success" text-color="black">{{ $t('plugins.WorkshopPower.meterConfig.in_use') }}</v-chip>
 							</div>
 						</div>
 					</div>
@@ -115,7 +115,6 @@
 						<v-row dense>
 							<v-col cols="12" sm="6">
 								<wf-field id="mc-device-id" :label="$t('plugins.WorkshopPower.meterConfig.device_id')">
-									<template #help><help-tip :title="$t('plugins.WorkshopPower.meterConfig.device_id')">{{ $t('plugins.WorkshopPower.meterConfig.id_field_hint') }}</help-tip></template>
 									<v-text-field id="mc-device-id" v-model.trim="form.id" :aria-label="$t('plugins.WorkshopPower.meterConfig.device_id')" dense outlined hide-details="auto" />
 								</wf-field>
 							</v-col>
@@ -124,7 +123,6 @@
 							</v-col>
 							<v-col cols="12" sm="8">
 								<wf-field id="mc-local-key" :label="$t('plugins.WorkshopPower.meterConfig.local_key_3')" :message="sameId ? $t('plugins.WorkshopPower.meterConfig.leave_empty_to_keep_key') : ''">
-									<template #help><help-tip :title="$t('plugins.WorkshopPower.meterConfig.local_key_3')">{{ $t('plugins.WorkshopPower.meterConfig.key_field_hint') }}</help-tip></template>
 									<v-text-field
 										id="mc-local-key" v-model="form.key" :aria-label="$t('plugins.WorkshopPower.meterConfig.local_key_3')" dense outlined hide-details="auto"
 										:type="viewKey ? 'text' : 'password'" autocomplete="off"
@@ -137,16 +135,16 @@
 							</v-col>
 						</v-row>
 
+							<help-fold class="mb-3" :items="[{ title: $t('plugins.WorkshopPower.meterConfig.device_id'), what: $t('plugins.WorkshopPower.meterConfig.id_field_hint') }, { title: $t('plugins.WorkshopPower.meterConfig.local_key_3'), what: $t('plugins.WorkshopPower.meterConfig.key_field_hint') }]" />
 						<div class="actions">
 								<v-btn small text @click="closeEditor()">{{ $t('plugins.WorkshopPower.meterConfig.cancel_editor') }}</v-btn>
 								<v-spacer />
 								<v-btn small outlined :loading="testing" :disabled="!canTest" @click="test()">
 									<v-icon small left>mdi-connection</v-icon>{{ $t('plugins.WorkshopPower.meterConfig.test_connection') }}
 								</v-btn>
-								<v-btn small color="primary" :loading="saving" :disabled="!testOk" @click="save()">
-									<v-icon small left>mdi-content-save</v-icon>{{ $t('plugins.WorkshopPower.meterConfig.save_and_use') }}
-								</v-btn>
+								<wf-action-button :action="saveAct" main :disabled="!testOk" :label="$t('plugins.WorkshopPower.meterConfig.save_and_use')" @run="save()" />
 							</div>
+							<wf-result class="mt-2" :action="saveAct" :text="sayError(saveAct, 'could_not_save')" @retry="saveAct.retry()" />
 							<div v-if="!testOk && canTest && !testing" class="text-caption grey--text mt-1 text-right">{{ $t('plugins.WorkshopPower.meterConfig.test_the_connection_first') }}</div>
 							<div v-if="testResult" class="mt-3 result" :class="testResult.ok ? 'result-ok' : 'result-error'">
 							<template v-if="testResult.ok">
@@ -154,7 +152,6 @@
 								<b>{{ $t('plugins.WorkshopPower.meterConfig.responds') }}</b>
 								{{ testResult.reading.power_w.toFixed(0) }} W &middot; {{ testResult.reading.voltage_v.toFixed(1) }} V &middot;
 								{{ testResult.reading.current_a.toFixed(2) }} A &middot; {{ $t('plugins.WorkshopPower.meterConfig.counter_kwh', { kwh: testResult.reading.energy_kwh.toFixed(2) }) }}
-								<div v-if="savedMsg" class="mt-1">{{ savedMsg }}</div>
 							</template>
 							<template v-else>
 								<v-icon small color="error" class="mr-1">mdi-alert-circle</v-icon>{{ testResult.error }}
@@ -164,9 +161,8 @@
 						<div class="text-caption grey--text mt-3">
 							{{ $t('plugins.WorkshopPower.meterConfig.changing_meters_doesn_t_lose_the') }} <b>{{ $t('plugins.WorkshopPower.meterConfig.shut_everything_down') }}</b> {{ $t('plugins.WorkshopPower.meterConfig.to_cut_the_power') }}
 						</div>
-						<v-btn v-if="currentSel" x-small text :color="forgetArmed ? 'error' : 'grey'" class="mt-1 px-0" :loading="restoring" @click="forget()">
-							{{ forgetArmed ? $t('plugins.WorkshopPower.meterConfig.tap_again_to_remove', { name: currentSel.name }) : $t('plugins.WorkshopPower.meterConfig.remove_this_meter') }}
-						</v-btn>
+						<wf-action-button v-if="currentSel" :action="forgetAct" danger :label="$t('plugins.WorkshopPower.meterConfig.remove_this_meter')" :arm-label="$t('plugins.WorkshopPower.meterConfig.tap_again_to_remove', { name: currentSel.name })" class="mt-1" @run="forget()" />
+						<wf-result class="mt-1" :action="forgetAct" :text="sayError(forgetAct, 'could_not_save')" @retry="forgetAct.retry()" />
 					</div>
 				</div>
 
@@ -198,8 +194,8 @@
 						<div class="text-caption grey--text">
 							{{ $t('plugins.WorkshopPower.meterConfig.safety_alarm_if_this_meter_draws') }}
 						</div>
-						<v-btn small color="primary" outlined class="mt-2" :loading="savingAj" @click="saveSettings()"><v-icon small left>mdi-content-save</v-icon>{{ $t('plugins.WorkshopPower.meterConfig.save_settings') }}</v-btn>
-						<span v-if="ajMsg" class="text-caption ml-2">{{ ajMsg }}</span>
+						<wf-action-button :action="settingsAct" class="mt-2" :label="$t('plugins.WorkshopPower.meterConfig.save_settings')" @run="saveSettings()" />
+						<wf-result class="mt-1" :action="settingsAct" :text="sayError(settingsAct, 'not_saved')" @retry="settingsAct.retry()" />
 					</div>
 				</div>
 						</div>
@@ -208,7 +204,7 @@
 			</v-expand-transition>
 		</div>
 		<div v-if="orderCut.length" class="text-caption mt-2">
-			<v-icon x-small class="mr-1" aria-hidden="true">mdi-power</v-icon>{{ $t('plugins.WorkshopPower.meterConfig.on_shutdown_it_cuts') }} <b>{{ orderCut.join(' → ') }}</b>
+			<v-icon small class="mr-1" aria-hidden="true">mdi-power</v-icon>{{ $t('plugins.WorkshopPower.meterConfig.on_shutdown_it_cuts') }} <b>{{ orderCut.join(' → ') }}</b>
 			<span class="grey--text">{{ $t('plugins.WorkshopPower.meterConfig.the_one_powering_the_system_always') }}</span>
 		</div>
 
@@ -230,15 +226,18 @@ import { pluginOf } from './workshop-ids.js' // Id nuevo o viejo del plugin
 import { dataOf } from './plugin-data.js'
 import MeterCard from './MeterCard.vue'
 import MeterHealth from './MeterHealth.vue'
-import HelpTip from './HelpTip.vue' // vue/_shared36
+import HelpFold from './HelpFold.vue' // vue/_shared36
 import WfField from './WfField.vue' // vue/_shared36
 import ErrorNotice from './ErrorNotice.vue' // vue/_shared36
+import WfActionButton from './WfActionButton.vue' // vue/_shared36 (FASE2)
+import WfResult from './WfResult.vue' // vue/_shared36 (FASE2)
+import { createAction } from './workshop-action.js' // vue/_shared36 (FASE2)
 
 export default {
-	components: { ErrorNotice, WfField, HelpTip, MeterCard, MeterHealth },
+	components: { HelpFold, ErrorNotice, WfField, MeterCard, MeterHealth, WfActionButton, WfResult },
 	mixins: [roleMixin],
 	// the meter data (its local key too) of the previous person stays in no field: it is read again (onSessionChange)
-	sessionData: ['meter', 'meters', 'orderCut', 'sel', 'newName', 'aj', 'ajMsg', 'queried', 'queryError', 'form', 'viewKey', 'found', 'searchError', 'testResult', 'testedWith', 'savedMsg', 'open'],
+	sessionData: ['meter', 'meters', 'orderCut', 'sel', 'newName', 'aj', 'queried', 'queryError', 'form', 'viewKey', 'found', 'searchError', 'testResult', 'testedWith', 'open'],
 	sessionErrors: ['queryError', 'searchError'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
 	props: {
 		live: { type: Boolean, default: false },
@@ -252,12 +251,13 @@ export default {
 			sel: null, // key of the meter being edited
 			newName: null,
 			aj: { name: '', inside_of: null, feeds_pi: false, short: true, order: 0, watchesCal: null, threshold: 40, cutSiAlarm: false },
-			savingAj: false,
-			ajMsg: null,
+			// the three writes of the editor (workshop-action.js): sending, done / refused, one request at a time
+			saveAct: createAction({ run: () => this.doSave() }),
+			settingsAct: createAction({ run: () => this.doSaveSettings() }),
+			forgetAct: createAction({ run: () => this.doForget(), arm: 'double' }),
 			querying: false,
 			queryError: null, // the error of the last read of the meters (a refusal too): the page says its cause
 			queried: false,
-			forgetArmed: false,
 			open: this.openEditor,
 			versions: ['3.1', '3.2', '3.3', '3.4', '3.5'],
 			form: { id: '', ip: '', key: '', version: '3.3' },
@@ -268,9 +268,6 @@ export default {
 			testing: false,
 			testResult: null,
 			testedWith: null,
-			saving: false,
-			savedMsg: null,
-			restoring: false,
 			guideOpen: true // step by step guide to the ID and the local key: open for a new meter, closed for an existing one
 		};
 	},
@@ -329,6 +326,9 @@ export default {
 	mounted() {
 		this.query();
 	},
+	beforeDestroy() {
+		this.resetActs();
+	},
 	methods: {
 		applyState(r) {
 			this.meter = r.meter || null;
@@ -352,8 +352,7 @@ export default {
 			this.newName = null;
 			this.form = { id: m.id, ip: m.ip, key: '', version: m.version || '3.3' };
 			this.testResult = null;
-			this.savedMsg = null;
-			this.ajMsg = null;
+			this.resetActs();
 			this.loadSettings();
 			this.guideOpen = false;
 			this.open = true;
@@ -365,9 +364,7 @@ export default {
 			this.newName = null;
 			this.form = { id: '', ip: '', key: '', version: '3.3' };
 			this.testResult = null;
-			this.savedMsg = null;
-			this.ajMsg = null;
-			this.forgetArmed = false;
+			this.resetActs();
 			this.$emit('closed');
 		},
 		newMeter() {
@@ -377,7 +374,7 @@ export default {
 			this.newName = this.meters.length ? i18n.t('plugins.WorkshopPower.meterConfig.meter_n', { n }) : i18n.t('plugins.WorkshopPower.meterConfig.general_name');
 			this.form = { id: '', ip: '', key: '', version: '3.3' };
 			this.testResult = null;
-			this.savedMsg = null;
+			this.resetActs();
 			this.guideOpen = true;
 			this.open = true;
 			this.$nextTick(() => { const e = this.$el.querySelector('.editor'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
@@ -390,26 +387,32 @@ export default {
 				watchesCal: m.watches ? m.watches.heater : null, threshold: m.watches ? m.watches.threshold_w : 40, cutSiAlarm: m.watches ? !!m.watches.cut : false
 			};
 		},
-		async saveSettings() {
+		saveSettings() {
+			this.settingsAct.run({});
+		},
+		async doSaveSettings() {
 			const a = this.aj;
 			const cambios = {
 				name: a.name || this.sel, inside_of: a.inside_of || null, feeds_pi: !!a.feeds_pi, short: !!a.short, order: Number(a.order) || 0,
 				watches: a.watchesCal ? { heater: a.watchesCal, threshold_w: Number(a.threshold) || 40, cut: !!a.cutSiAlarm } : null
 			};
-			this.savingAj = true;
-			this.ajMsg = null;
-			try {
-				const r = await this.m9003('settings', { meter: String(this.sel || ''), changes: cambios });
-				if (r.ok === false) throw new Error(r.error || 'error');
-				this.applyState(r);
-				this.loadSettings();
-				this.ajMsg = i18n.t('plugins.WorkshopPower.meterConfig.saved');
-				this.$emit('changed');
-			} catch (e) {
-				this.ajMsg = isRefusal(e) ? refusalNow(e, 'technician') : i18n.t('plugins.WorkshopPower.meterConfig.not_saved') + (e.message || e);
-			} finally {
-				this.savingAj = false;
-			}
+			const r = await this.m9003('settings', { meter: String(this.sel || ''), changes: cambios });
+			if (r.ok === false) throw new Error(r.error || 'error');
+			this.applyState(r);
+			this.loadSettings();
+			this.$emit('changed');
+			return { text: i18n.t('plugins.WorkshopPower.meterConfig.saved') };
+		},
+		// the sentence of a refused write: its cause when it is a refusal (no session / role), else the failure with its prefix
+		sayError(act, key) {
+			const e = act.state === 'error' ? act.error : null;
+			if (!e) return '';
+			return isRefusal(e) ? refusalNow(e, 'technician') : i18n.t('plugins.WorkshopPower.meterConfig.' + key) + (e.message || e);
+		},
+		resetActs() {
+			this.saveAct.reset();
+			this.settingsAct.reset();
+			this.forgetAct.reset();
 		},
 		...mapActions('machine', ['sendCode']),
 		// API of WorkshopService: meter.<op> -> the JSON of the service
@@ -424,6 +427,7 @@ export default {
 		},
 		// the person signed in / out or the role changed: the meter is read again
 		onSessionChange() {
+			this.resetActs(); // what was in the air belonged to the person who left
 			this.query();
 		},
 		async query() {
@@ -486,7 +490,7 @@ export default {
 		},
 		async test() {
 			this.testing = true;
-			this.savedMsg = null;
+			this.saveAct.reset();
 			const signature = this.signature;
 			try {
 				// meter.test takes no name (only meter.save does)
@@ -499,44 +503,31 @@ export default {
 				this.testing = false;
 			}
 		},
-		async save() {
-			this.saving = true;
-			try {
-				const r = await this.m9003('save', this.params());
-				this.testResult = r;
-				if (r.ok) {
-					this.applyState(r);
-					this.newName = null;
-					this.form.key = '';
-					this.testedWith = this.signature;
-					this.savedMsg = i18n.t('plugins.WorkshopPower.meterConfig.saved_live_readings_use_this_meter');
-					this.loadSettings();
-					this.$emit('changed');
-				}
-			} catch (e) {
-				this.testResult = { ok: false, error: isRefusal(e) ? refusalNow(e, 'technician') : i18n.t('plugins.WorkshopPower.meterConfig.could_not_save') + (e.message || e) };
-			} finally {
-				this.saving = false;
-			}
+		save() {
+			this.saveAct.run({});
 		},
-		async forget() {
-			if (!this.forgetArmed) {
-				this.forgetArmed = true;
-				setTimeout(() => { this.forgetArmed = false; }, 4000);
-				return;
-			}
-			this.forgetArmed = false;
-			this.restoring = true;
-			try {
-				const r = await this.m9003('forget', { meter: String(this.sel || '') });
-				this.applyState(r);
-				this.testResult = null;
-				this.sel = null;
-				this.open = false;
-				this.$emit('changed');
-			} finally {
-				this.restoring = false;
-			}
+		async doSave() {
+			const r = await this.m9003('save', this.params());
+			if (!r.ok) throw new Error(r.error || 'error');
+			this.testResult = r;
+			this.applyState(r);
+			this.newName = null;
+			this.form.key = '';
+			this.testedWith = this.signature;
+			this.loadSettings();
+			this.$emit('changed');
+			return { text: i18n.t('plugins.WorkshopPower.meterConfig.saved_live_readings_use_this_meter') };
+		},
+		forget() {
+			this.forgetAct.run({});
+		},
+		async doForget() {
+			const r = await this.m9003('forget', { meter: String(this.sel || '') });
+			this.applyState(r);
+			this.testResult = null;
+			this.sel = null;
+			this.open = false;
+			this.$emit('changed');
 		},
 		// navigator.clipboard only exists on https or localhost; DWC on the workshop network is plain http, so the
 		// hidden textarea is the way that works there
@@ -611,12 +602,7 @@ export default {
 	border-radius: 10px;
 	overflow: hidden;
 }
-.editor-new {
-	border: 1px solid var(--wf-sec, #7E57C2) !important;
-}
-.editor-edit {
-	border: 1px solid rgba(128, 128, 128, 0.5) !important;
-}
+/* the editor is a plain card of the family (its border and its accent line come from design/family.css; the "new meter" divider above names it) */
 .editor-head {
 	display: flex;
 	align-items: center;

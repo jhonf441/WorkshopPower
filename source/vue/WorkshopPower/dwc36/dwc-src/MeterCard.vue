@@ -6,7 +6,7 @@
 		<div class="mcard-head">
 			<span class="mcard-dot" aria-hidden="true" />
 			<b class="mcard-name">{{ meter.name }}</b>
-			<v-chip v-if="selected" x-small color="primary" class="mcard-badge">{{ $t('plugins.WorkshopPower.meterConfig.editing_badge') }}</v-chip>
+			<v-chip v-if="selected" small color="primary" class="mcard-badge">{{ $t('plugins.WorkshopPower.meterConfig.editing_badge') }}</v-chip>
 			<v-spacer />
 			<span class="mcard-status">
 				<span class="mcard-w">{{ reading.text }}</span>
@@ -17,10 +17,10 @@
 			</v-btn>
 		</div>
 		<div class="mcard-chips">
-			<v-chip x-small outlined :color="meter.feeds_pi ? 'primary' : ''">{{ meter.feeds_pi ? $t('plugins.WorkshopPower.meterConfig.powers_the_system') : meter.inside_of ? $t('plugins.WorkshopPower.meterConfig.inside_of', { name: insideName }) : $t('plugins.WorkshopPower.meterConfig.own_line') }}</v-chip>
-			<v-chip v-if="meter.short" x-small outlined :color="meter.feeds_pi ? 'warning' : ''">{{ meter.feeds_pi ? $t('plugins.WorkshopPower.meterConfig.cut_last') : $t('plugins.WorkshopPower.meterConfig.cut_on_shutdown') }}</v-chip>
-			<v-chip v-if="meter.watches" x-small outlined color="error">{{ $t('plugins.WorkshopPower.meterConfig.watches_heater', { heater: meter.watches.heater }) }}</v-chip>
-			<v-chip v-if="!meter.configured" x-small color="warning" text-color="black">{{ $t('plugins.WorkshopPower.meterConfig.no_device_data') }}</v-chip>
+			<v-chip small outlined :color="meter.feeds_pi ? 'primary' : ''">{{ meter.feeds_pi ? $t('plugins.WorkshopPower.meterConfig.powers_the_system') : meter.inside_of ? $t('plugins.WorkshopPower.meterConfig.inside_of', { name: insideName }) : $t('plugins.WorkshopPower.meterConfig.own_line') }}</v-chip>
+			<v-chip v-if="meter.short" small outlined :color="meter.feeds_pi ? 'warning' : ''">{{ meter.feeds_pi ? $t('plugins.WorkshopPower.meterConfig.cut_last') : $t('plugins.WorkshopPower.meterConfig.cut_on_shutdown') }}</v-chip>
+			<v-chip v-if="meter.watches" small outlined color="error">{{ $t('plugins.WorkshopPower.meterConfig.watches_heater', { heater: meter.watches.heater }) }}</v-chip>
+			<v-chip v-if="!meter.configured" small color="warning" text-color="black">{{ $t('plugins.WorkshopPower.meterConfig.no_device_data') }}</v-chip>
 		</div>
 		<dl class="mcard-fields">
 			<div><dt>{{ $t('plugins.WorkshopPower.meterConfig.card_id') }}</dt><dd>{{ meter.id || '--' }}</dd></div>
@@ -92,7 +92,7 @@ export default {
 	font-variant-numeric: tabular-nums;
 }
 .mcard-state {
-	font-size: 11px;
+	font-size: 12px;
 	color: var(--tp-faint, #9e9e9e);
 }
 .mcard-chips {
@@ -110,7 +110,7 @@ export default {
 	border-top: 1px solid rgba(128, 128, 128, 0.2);
 }
 .mcard-fields dt {
-	font-size: 11px;
+	font-size: 12px;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 	color: var(--tp-faint, #9e9e9e);

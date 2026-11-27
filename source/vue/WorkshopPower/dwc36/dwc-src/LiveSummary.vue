@@ -1,94 +1,96 @@
 <template>
-	<v-card class="mb-3">
-		<v-card-text class="pb-2">
-			<!-- no meter data / stale readings: say what to do, do not just show dashes -->
-			<div v-if="!hasData" class="live-notice" role="status">
-				<v-icon large color="warning" aria-hidden="true">mdi-meter-electric-outline</v-icon>
-				<div class="live-notice-body">
-					<div class="font-weight-medium">{{ $t('plugins.WorkshopPower.consumption.empty_title') }}</div>
-					<div class="text-caption grey--text">{{ $t(canConfigure ? 'plugins.WorkshopPower.consumption.empty_text_tech' : 'plugins.WorkshopPower.consumption.empty_text_other') }}</div>
-				</div>
-				<div class="live-notice-actions">
-					<v-btn small color="primary" :disabled="!canConfigure" @click="$emit('configure')">
-						<v-icon small left>mdi-cog</v-icon>{{ $t('plugins.WorkshopPower.consumption.meter') }}
-					</v-btn>
-					<lock-reason :ops="meterOps" min="technician" :subject="$t('plugins.WorkshopPower.subjects.meter')" />
-				</div>
-			</div>
-			<div v-else-if="state === 'dot-stale'" class="live-notice live-notice-stale" role="status">
-				<v-icon large color="warning" aria-hidden="true">mdi-wifi-alert</v-icon>
-				<div class="live-notice-body">
-					<div class="font-weight-medium">{{ $t('plugins.WorkshopPower.consumption.stale_title') }}</div>
-					<div class="text-caption grey--text">{{ $t('plugins.WorkshopPower.consumption.stale_text') }}</div>
-				</div>
-				<div class="live-notice-actions">
-					<v-btn small outlined :disabled="!canConfigure" @click="$emit('configure')">
-						<v-icon small left>mdi-cog</v-icon>{{ $t('plugins.WorkshopPower.consumption.meter') }}
-					</v-btn>
-					<lock-reason :ops="meterOps" min="technician" :subject="$t('plugins.WorkshopPower.subjects.meter')" />
-				</div>
-			</div>
+	<!-- the first group of the summary card: its head (the state of the readings, the meter settings), the live reading and the figures -->
+	<div class="wf-group live">
+		<card-head icon="mdi-gauge" :title="$t('plugins.WorkshopPower.consumption.live_title')" :state="text" :state-kind="stateKind">
+			<v-btn v-if="canConfigure && hasData" small text @click="$emit('configure')">
+				<v-icon small left>mdi-cog</v-icon>{{ $t('plugins.WorkshopPower.consumption.meter') }}
+			</v-btn>
+		</card-head>
 
-			<div class="live-grid">
-				<div class="live-main">
-					<div class="d-flex align-center">
-						<span class="live-dot" :class="state" aria-hidden="true" />
-						<span class="text-caption grey--text ml-2">{{ text }}</span>
-						<v-spacer />
-						<v-btn v-if="canConfigure && hasData" x-small text color="grey" @click="$emit('configure')">
-							<v-icon x-small left>mdi-cog</v-icon>{{ $t('plugins.WorkshopPower.consumption.meter') }}
-						</v-btn>
-					</div>
-					<!-- several meters: choose which to see; Total = those with their own line -->
-					<v-btn-toggle v-if="meters.length > 1" v-model="chosen" mandatory dense color="primary" class="mt-1 med-toggle">
-						<v-btn x-small value="total">{{ $t('plugins.WorkshopPower.consumption.total') }}</v-btn>
-						<v-btn v-for="m in meters" :key="m.key" x-small :value="m.key">{{ m.name }}</v-btn>
-					</v-btn-toggle>
-					<div class="live-watts" :class="{ 'live-watts-off': state !== 'dot-ok' }">
-						{{ view.w != null ? view.w.toFixed(0) : '--' }}<span class="live-unit">W</span>
-					</div>
-					<div class="text-body-2 grey--text">
-						<span class="mr-3"><v-icon small color="info" aria-hidden="true">mdi-sine-wave</v-icon> {{ view.v != null ? view.v.toFixed(1) : '--' }} V</span>
-						<span><v-icon small color="success" aria-hidden="true">mdi-current-ac</v-icon> {{ view.a != null ? view.a.toFixed(2) : '--' }} A</span>
-					</div>
-					<div v-if="meters.length > 1" class="live-meters">
-						<span v-for="m in meters" :key="'v' + m.key" class="live-meter-chip">
-							{{ m.name }}: <b>{{ m.ok ? Math.round(m.power_w) + ' W' : $t('plugins.WorkshopPower.common.no_reading') }}</b><span v-if="m.inside_of" class="grey--text"> {{ $t('plugins.WorkshopPower.consumption.part_of', { name: nameOf(m.inside_of) }) }}</span>
-						</span>
-					</div>
-					<div v-if="costHour !== null" class="text-caption grey--text mt-1">
-						{{ $t('plugins.WorkshopPower.consumption.cost_per_hour_now', { cost: costHour }) }}
-					</div>
-				</div>
+		<!-- ONE notice under the head, the highest cause: the service is missing or stopped (without it there are no readings to wait for), else the
+		     read error. A Duet without a Raspberry is the band of the page, under its bar, never inside the card -->
+		<service-notice v-if="cardServiceNotice" />
+		<error-notice v-else-if="error" :error="error" retry @retry="$emit('retry')" />
 
-				<div class="tile">
-					<div class="tile-label">{{ $t('plugins.WorkshopPower.consumption.today') }}</div>
-					<div class="tile-value">{{ fmtKwh(todayKwh) }} <small>kWh</small></div>
-					<div class="tile-sub">{{ costOf(todayKwh) || NBSP }}</div>
-				</div>
-				<div class="tile">
-					<div class="tile-label">{{ $t('plugins.WorkshopPower.consumption.this_month') }}</div>
-					<div class="tile-value">{{ fmtKwh(monthKwh) }} <small>kWh</small></div>
-					<div class="tile-sub">{{ costOf(monthKwh) || NBSP }}</div>
-				</div>
-				<div class="tile">
-					<div class="tile-label">{{ $t('plugins.WorkshopPower.consumption.month_projection') }}</div>
-					<div class="tile-value">{{ projection ? fmtKwh(projection.kwh) : '--' }} <small>kWh</small></div>
-					<div class="tile-sub">{{ projection ? (costOf(projection.kwh) || ('~' + projection.daily.toFixed(2) + $t('plugins.WorkshopPower.consumption.kwh_day'))) : $t('plugins.WorkshopPower.consumption.data_missing') }}</div>
-				</div>
+		<!-- no meter data / stale readings: a note of the family inside the card that says what to do, not just dashes -->
+		<div v-if="!serviceDown && !hasData" class="wf-notice wf-notice--down live-notice" role="status">
+			<v-icon class="wf-notice-icon" :size="16" aria-hidden="true">mdi-meter-electric-outline</v-icon>
+			<div class="wf-notice-body">
+				<div class="wf-notice-text"><b>{{ $t('plugins.WorkshopPower.consumption.empty_title') }}</b> {{ $t(canConfigure ? 'plugins.WorkshopPower.consumption.empty_text_tech' : 'plugins.WorkshopPower.consumption.empty_text_other') }}</div>
 			</div>
-			<div class="text-caption grey--text mt-2">{{ $t('plugins.WorkshopPower.consumption.units_hint') }}</div>
-		</v-card-text>
-	</v-card>
+			<div class="wf-notice-action live-notice-actions">
+				<v-btn depressed color="primary" :disabled="!canConfigure" @click="$emit('configure')">
+					<v-icon small left>mdi-cog</v-icon>{{ $t('plugins.WorkshopPower.consumption.meter') }}
+				</v-btn>
+				<lock-reason :ops="meterOps" min="technician" :subject="$t('plugins.WorkshopPower.subjects.meter')" />
+			</div>
+		</div>
+		<div v-else-if="!serviceDown && state === 'dot-stale'" class="wf-notice wf-notice--down live-notice live-notice-stale" role="status">
+			<v-icon class="wf-notice-icon" :size="16" aria-hidden="true">mdi-wifi-alert</v-icon>
+			<div class="wf-notice-body">
+				<div class="wf-notice-text"><b>{{ $t('plugins.WorkshopPower.consumption.stale_title') }}</b> {{ $t('plugins.WorkshopPower.consumption.stale_text') }}</div>
+			</div>
+			<div class="wf-notice-action live-notice-actions">
+				<v-btn small outlined :disabled="!canConfigure" @click="$emit('configure')">
+					<v-icon small left>mdi-cog</v-icon>{{ $t('plugins.WorkshopPower.consumption.meter') }}
+				</v-btn>
+				<lock-reason :ops="meterOps" min="technician" :subject="$t('plugins.WorkshopPower.subjects.meter')" />
+			</div>
+		</div>
+
+		<!-- several meters: choose which to see; Total = those with their own line -->
+		<v-btn-toggle v-if="meters.length > 1" v-model="chosen" mandatory dense color="primary" class="med-toggle">
+			<v-btn small value="total">{{ $t('plugins.WorkshopPower.consumption.total') }}</v-btn>
+			<v-btn v-for="m in meters" :key="m.key" small :value="m.key">{{ m.name }}</v-btn>
+		</v-btn-toggle>
+
+		<!-- the figures of the family (.wf-stat): the power now (with the voltage and the current), today, this month and the projection -->
+		<div class="wf-stats live-grid">
+			<div class="wf-stat live-main">
+				<div class="wf-stat-label">{{ $t('plugins.WorkshopPower.consumption.power') }}</div>
+				<div class="wf-stat-value" :class="{ 'live-off': state !== 'dot-ok' }">{{ view.w != null ? view.w.toFixed(0) : '--' }} <span class="wp-unit">W</span></div>
+				<div class="wp-sub">{{ view.v != null ? view.v.toFixed(1) : '--' }} V &middot; {{ view.a != null ? view.a.toFixed(2) : '--' }} A</div>
+			</div>
+			<div class="wf-stat">
+				<div class="wf-stat-label">{{ $t('plugins.WorkshopPower.consumption.today') }}</div>
+				<div class="wf-stat-value">{{ fmtKwh(todayKwh) }} <span class="wp-unit">kWh</span></div>
+				<div class="wp-sub">{{ costOf(todayKwh) || NBSP }}</div>
+			</div>
+			<div class="wf-stat">
+				<div class="wf-stat-label">{{ $t('plugins.WorkshopPower.consumption.this_month') }}</div>
+				<div class="wf-stat-value">{{ fmtKwh(monthKwh) }} <span class="wp-unit">kWh</span></div>
+				<div class="wp-sub">{{ costOf(monthKwh) || NBSP }}</div>
+			</div>
+			<div class="wf-stat">
+				<div class="wf-stat-label">{{ $t('plugins.WorkshopPower.consumption.month_projection') }}</div>
+				<div class="wf-stat-value">{{ projection ? fmtKwh(projection.kwh) : '--' }} <span class="wp-unit">kWh</span></div>
+				<div class="wp-sub">{{ projection ? (costOf(projection.kwh) || ('~' + projection.daily.toFixed(2) + $t('plugins.WorkshopPower.consumption.kwh_day'))) : $t('plugins.WorkshopPower.consumption.data_missing') }}</div>
+			</div>
+		</div>
+		<div v-if="meters.length > 1" class="live-meters">
+			<span v-for="m in meters" :key="'v' + m.key">
+				{{ m.name }}: <b>{{ m.ok ? Math.round(m.power_w) + ' W' : $t('plugins.WorkshopPower.common.no_reading') }}</b><span v-if="m.inside_of" class="live-part"> {{ $t('plugins.WorkshopPower.consumption.part_of', { name: nameOf(m.inside_of) }) }}</span>
+			</span>
+		</div>
+		<div v-if="costHour !== null" class="wp-note">{{ $t('plugins.WorkshopPower.consumption.cost_per_hour_now', { cost: costHour }) }}</div>
+		<div class="wp-note">{{ $t('plugins.WorkshopPower.consumption.units_hint') }}</div>
+	</div>
 </template>
 
 <script>
 import { fmtKwh, costText } from './money.js'
+import CardHead from './CardHead.vue' // the head of a card (vue/_shared36)
+import ServiceNotice from './ServiceNotice.vue' // vue/_shared36
+import ErrorNotice from './ErrorNotice.vue' // vue/_shared36
+import { serviceProblemKind } from './service-problem.js' // vue/_shared36
 import LockReason from './LockReason.vue' // vue/_shared36
 import { METER_OPS } from './access-groups.js'
 
+// the dot of the head by the state of the readings (CardHead stateKind)
+const STATE_KIND = { 'dot-ok': 'ok', 'dot-stale': 'warn' }
+
 export default {
-	components: { LockReason },
+	components: { CardHead, LockReason, ServiceNotice, ErrorNotice },
 	props: {
 		value: { type: String, default: '' }, // meter chosen: '' = the main one, 'total' or a key
 		state: { type: String, default: 'dot-off' }, // dot-ok | dot-stale | dot-off
@@ -101,12 +103,22 @@ export default {
 		monthKwh: { type: Number, default: null },
 		projection: { type: Object, default: null },
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
-		canConfigure: { type: Boolean, default: false }
+		canConfigure: { type: Boolean, default: false },
+		error: { type: [Object, String, Error], default: null } // the tiles or the rate could not be read
 	},
 	data() {
-		return { NBSP: ' ', meterOps: METER_OPS }
+		return { NBSP: ' ', meterOps: METER_OPS }
 	},
 	computed: {
+		// the service of the workshop is not there: its notice covers the one of "no readings yet"
+		serviceDown() {
+			return !!serviceProblemKind(this.$store)
+		},
+		// the notice of the card: only the service missing or stopped (no_sbc is the band of the page)
+		cardServiceNotice() {
+			const kind = serviceProblemKind(this.$store)
+			return kind === 'missing' || kind === 'stopped'
+		},
 		chosen: {
 			get() {
 				return this.value
@@ -114,6 +126,9 @@ export default {
 			set(v) {
 				this.$emit('input', v)
 			}
+		},
+		stateKind() {
+			return STATE_KIND[this.state] || ''
 		}
 	},
 	methods: {
@@ -133,6 +148,7 @@ export default {
 .med-toggle {
 	flex-wrap: wrap;
 	height: auto;
+	margin-bottom: 12px;
 }
 .live-notice-actions {
 	display: flex;
@@ -140,122 +156,18 @@ export default {
 	align-items: flex-start;
 	gap: 4px;
 }
-.live-notice {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: 12px;
-	padding: 12px;
-	margin-bottom: 12px;
-	border-radius: 8px;
-	border: 1px dashed rgba(128, 128, 128, 0.5);
-	background: rgba(128, 128, 128, 0.06);
-}
-.live-notice-stale {
-	border-style: solid;
-	border-color: var(--v-warning-base, #fb8c00);
-}
-.live-notice-body {
-	flex: 1 1 220px;
-	min-width: 0;
-}
-.live-grid {
-	display: grid;
-	grid-template-columns: minmax(200px, 1.4fr) repeat(3, minmax(110px, 1fr));
-	gap: 12px;
-	align-items: stretch;
-}
-@media (max-width: 760px) {
-	.live-grid {
-		grid-template-columns: repeat(3, 1fr);
-	}
-	.live-main {
-		grid-column: 1 / -1;
-	}
-}
-@media (max-width: 480px) {
-	.live-grid {
-		grid-template-columns: repeat(2, 1fr);
-	}
-}
-.live-watts {
-	font-size: 52px;
-	font-weight: 500;
-	line-height: 1.1;
-	color: var(--tp-amber, #ffb300);
-	font-variant-numeric: tabular-nums;
-}
-.live-watts-off {
+/* no fresh reading: the last value stays, dimmed */
+.live-off {
 	opacity: 0.55;
-}
-.live-unit {
-	font-size: 22px;
-	margin-left: 4px;
-	color: var(--tp-faint, #9e9e9e);
 }
 .live-meters {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 4px 12px;
 	font-size: 12px;
-	margin-top: 4px;
+	margin-top: 8px;
 }
-.live-dot {
-	width: 9px;
-	height: 9px;
-	border-radius: 50%;
-	display: inline-block;
-}
-.dot-ok {
-	background: #66BB6A;
-	animation: pulso 2s infinite;
-}
-.dot-stale {
-	background: #FFA726;
-}
-.dot-off {
-	background: #757575;
-}
-@keyframes pulso {
-	0% { box-shadow: 0 0 0 0 rgba(102, 187, 106, 0.6); }
-	70% { box-shadow: 0 0 0 7px rgba(102, 187, 106, 0); }
-	100% { box-shadow: 0 0 0 0 rgba(102, 187, 106, 0); }
-}
-@media (prefers-reduced-motion: reduce) {
-	.dot-ok {
-		animation: none;
-	}
-}
-.tile {
-	background: rgba(128, 128, 128, 0.09);
-	border-radius: 8px;
-	padding: 10px 12px;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	min-width: 0;
-}
-.tile-label {
-	font-size: 12px;
-	color: var(--tp-faint, #9e9e9e);
-}
-.tile-value {
-	font-size: 22px;
-	font-weight: 500;
-	line-height: 1.25;
-	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
-}
-.tile-value small {
-	font-size: 13px;
-	color: var(--tp-faint, #9e9e9e);
-	font-weight: 400;
-}
-.tile-sub {
-	font-size: 12px;
-	color: var(--tp-faint2, #bdbdbd);
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
+.live-part {
+	opacity: 0.7;
 }
 </style>

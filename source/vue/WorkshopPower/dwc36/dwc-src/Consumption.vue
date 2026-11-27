@@ -1,45 +1,41 @@
 <template>
-	<v-container :style="{ '--wf-sec': secColor }" fluid class="pa-0 consumption-page workshop-theme">
-		<service-notice />
+	<!-- wp-page: the layout rules of the page (the one style block of the plugin, in PowerPage.vue). The side panel's body (.st-body) is THE card
+	     of the open section: its head is a CardHead and what used to be cards inside it are .wf-group (a divider, no gray sub-card) -->
+	<v-container :style="{ '--wf-sec': secColor }" fluid class="pa-0 consumption-page workshop-theme wp-page">
+		<!-- the compact bar of the family: the lead is kept for screen readers and not drawn -->
 		<page-header :lead="$t('plugins.WorkshopPower.common.lead')" icon="mdi-gauge" :title="$t('plugins.WorkshopPower.common.power_usage')" :reasons="headerReasons">
 			<template v-slot:startup><startup-panel plugin="WorkshopPower" :defs="rowsStartup" /></template>
 		</page-header>
+		<!-- the band of the page, under the bar: a Duet without a Raspberry (any section) or the service down in the sections without that card note;
+		     in Now the service missing / stopped goes under the head of its card (LiveSummary), alone -->
+		<service-notice v-if="bandNotice" />
 		<div class="st-layout">
 			<side-tabs v-model="section" :items="sections" />
 			<div class="st-body">
 				<locked-cover v-if="lockedSection" :needed="lockedSection" :items="sections" :value="section" />
 				<div v-if="!lockedSection && section === 'summary'">
-					<!-- the tiles or the rate could not be read: the cause in a sentence (a refusal is the calm note of its cause), never silent zeros -->
-					<error-notice v-if="readError" :error="readError" retry @retry="loadSummaries(); loadTariff()" />
 					<!-- ===== Live reading + quick summary ===== -->
 					<live-summary
 						v-model="meterView" :state="liveState" :text="liveText" :has-data="!!consumptionCurrent" :view="view" :meters="listMeters"
 						:cost-hour="costHour" :today-kwh="todayKwh" :month-kwh="monthKwh" :projection="projection" :tariff="tariff"
-						:can-configure="canMeter" @configure="goAMeter()"
+						:can-configure="canMeter" :error="readError" @configure="goAMeter()" @retry="loadSummaries(); loadTariff()"
 					/>
 					<running-job :job="running" :tariff="tariff" :meter="meterView" :watts="view.w" />
 					<budget-card :limit="budgetLimit" :month-kwh="monthKwh" :projection="projection" :tariff="tariff" @update:limit="setBudget" />
-					<v-card class="mb-3">
-						<v-card-text class="pt-0">
-							<tariff-row :tariff="tariff" :read-failed="!!tariffError" @saved="tariff = $event; tariffError = null" />
-						</v-card-text>
-					</v-card>
+					<div class="wf-group">
+						<tariff-row :tariff="tariff" :read-failed="!!tariffError" @saved="tariff = $event; tariffError = null" />
+					</div>
+					<help-fold class="mt-3" :title="$t('plugins.WorkshopPower.consumption.summary_help_title')" :what="$t('plugins.WorkshopPower.consumption.summary_help_what')" :why="$t('plugins.WorkshopPower.consumption.summary_help_for')" :if-missing="$t('plugins.WorkshopPower.consumption.summary_help_missing')" :how="$t('plugins.WorkshopPower.consumption.summary_help_how')" />
 				</div>
 				<period-section v-if="!lockedSection && section === 'period'" :tariff="tariff" :meter="meterView" />
 				<jobs-section
 					v-if="!lockedSection && section === 'jobs'" :tariff="tariff" :meter="meterView" :has-activity="hasActivity" :running="running" :watts="view.w"
 				/>
 				<history-section v-if="!lockedSection && section === 'history'" :tariff="tariff" :meter="meterView" />
-				<div v-if="!lockedSection && section === 'meter'">
+				<div v-if="!lockedSection && section === 'meter'" ref="meterCard">
 					<!-- ===== Meter settings ===== -->
-					<v-card ref="meterCard" class="mb-3">
-						<v-card-text>
-							<div class="text-subtitle-1 font-weight-medium mb-2">
-								<v-icon small class="mr-1" color="primary">mdi-cog</v-icon>{{ $t('plugins.WorkshopPower.consumption.meter_settings') }}
-							</div>
-							<meter-config :live="liveState === 'dot-ok'" :open-editor="meterOpen || !consumptionCurrent" @changed="onChangeMeter()" @closed="meterOpen = false" />
-						</v-card-text>
-					</v-card>
+					<card-head icon="mdi-cog" :title="$t('plugins.WorkshopPower.consumption.meter_settings')" />
+					<meter-config :live="liveState === 'dot-ok'" :open-editor="meterOpen || !consumptionCurrent" @changed="onChangeMeter()" @closed="meterOpen = false" />
 				</div>
 			</div>
 		</div>
@@ -52,8 +48,11 @@ import i18n from '../../i18n'
 'use strict'
 
 import ServiceNotice from './ServiceNotice.vue'
+import { serviceProblemKind } from './service-problem.js' // vue/_shared36
 import StartupPanel from './StartupPanel.vue' // start-up card (vue/_shared)
 import PageHeader from './PageHeader.vue' // header of every page (vue/_shared)
+import CardHead from './CardHead.vue' // the head of a card (vue/_shared36)
+import HelpFold from './HelpFold.vue' // vue/_shared36
 import { rowsConsumption } from './startup-rows.js'
 import { api } from './workshop-api.js'
 import LiveSummary from './LiveSummary.vue'
@@ -84,7 +83,7 @@ export default {
 	// what the previous person read (the tiles, the rate) stays in no data of the page (ESTANDAR 3.1); onSessionChange reads it again
 	sessionData: ['todayData', 'monthData', 'tariff', 'tilesError', 'tariffError'],
 	sessionErrors: ['tilesError', 'tariffError'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
-	components: { ErrorNotice, PageHeader, SideTabs, LockedCover, ServiceNotice, StartupPanel, LiveSummary, RunningJob, BudgetCard, PeriodSection, JobsSection, HistorySection, MeterConfig, TariffRow },
+	components: { ErrorNotice, PageHeader, CardHead, HelpFold, SideTabs, LockedCover, ServiceNotice, StartupPanel, LiveSummary, RunningJob, BudgetCard, PeriodSection, JobsSection, HistorySection, MeterConfig, TariffRow },
 	data() {
 		let medView = '';
 		try {
@@ -249,6 +248,10 @@ export default {
 		budget() {
 			return budgetState(this.budgetLimit, this.monthKwh, this.projection ? this.projection.kwh : null);
 		},
+		bandNotice() {
+			const kind = serviceProblemKind(this.$store)
+			return !!kind && (this.section !== 'summary' || kind === 'no_sbc')
+		},
 		headerReasons() {
 			const out = this.liveState === 'dot-ok' ? [] : [{ level: 'warn', text: this.liveText }]; // no meter data or stale readings
 			const b = this.budget;
@@ -335,7 +338,8 @@ export default {
 			this.meterOpen = true;
 			this.section = 'meter';
 			this.$nextTick(() => {
-				const el = this.$refs.meterCard && this.$refs.meterCard.$el;
+				const ref = this.$refs.meterCard;
+				const el = ref && (ref.$el || ref); // the section is a plain element now (it was a v-card)
 				if (el) {
 					el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 				}

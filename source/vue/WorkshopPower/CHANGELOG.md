@@ -1,5 +1,46 @@
 # WorkshopPower -- historial de versiones
 
+## 2.11.0 -- 2026-11-23
+
+- rediseno de la familia (23-nov) con las piezas de front: barra compacta (la frase de la pagina queda solo para lectores de pantalla), la escala de la familia (botones de 32 con area de toque de 40, el principal 36, campos 36) y ningun x-small (chips de dato de 24, iconos de 16)
+- cada seccion es UNA tarjeta: su cabeza es CardHead (icono 20 en el color de la seccion, titulo 16/600, franja del 4 %, estado y acciones a la derecha) y lo que eran tarjetas dentro de ella son grupos con divisor, sin relleno gris
+- Resumen: el estado de las lecturas en la cabeza; potencia, hoy, mes y proyeccion como cifras de la familia; "sin datos" y "sin lecturas" como nota de la familia dentro de la tarjeta; el tope mensual con su estado
+- Por periodo e Historial: exportar y el rango en la cabeza, los segmentos y la navegacion en una fila; las cifras del historial y del trabajo en curso como cifras de la familia
+- una ayuda plegable al pie de cada seccion (Resumen, Por periodo, Trabajos, Historial) en lugar de las lineas sueltas de pista
+- sin medidor: la tarjeta con su cabeza, una linea y el boton principal de 36
+
+## 2.10.2 -- 2026-11-23
+
+- optional files are never requested when absent
+
+## 2.10.1 -- 2026-11-22
+
+- select arrows, one focus ring per field, shared family stylesheet split
+
+## 2.10.0 -- 2026-11-22
+
+- One common page bar and 44 px fields
+
+## 2.9.3 -- 2026-11-22
+
+- Rebuild with shared update: start-up card split into modules, neutral Spanish texts, service texts resynced, unused .wf-index rule dropped
+
+## 2.9.2 -- 2026-11-22
+
+- Tuteo in texts (no voseo in es.json).
+
+## 2.9.1 -- 2026-11-22
+
+- Visual review round: single hover and focus for inputs and controls (family styles), 44 px switch and checkbox rows, range picker field 44 px.
+
+## 2.9.0 -- 2026-11-21
+
+- Style unification: tariff save, meter save, meter settings and remove-meter are family actions with result line (double touch for remove), help popovers become help lines and folds, 44 px controls, nothing under 12 px.
+
+## 2.8.12 -- 2026-11-20
+
+- Unchecked state when the machine cannot be read, no false 'missing'; SD reads keep the last value; positions and materials refuse to save without reading; not-in-use setup items
+
 ## 2.8.11 -- 2026-11-20
 
 - Own calendar in the date range picker (no native date/time fields); PiHealth: the stored-data table moves to the service
@@ -42,7 +83,7 @@
 
 ## 2.8.1 -- 2026-11-11
 
-- Owner report 2026-11-11: shutdown without session, kiosk PIN pad, hive confirm color, wheel release and Z keys, version in every page bar
+- User report 2026-11-11: shutdown without session, kiosk PIN pad, hive confirm color, wheel release and Z keys, version in every page bar
 
 ## 2.8.0 -- 2026-11-11
 

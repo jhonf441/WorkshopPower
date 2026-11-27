@@ -1,12 +1,12 @@
 <template>
 	<div>
-		<div class="d-flex align-center flex-wrap mt-3 tariff-row">
+		<div class="d-flex align-center flex-wrap tariff-row">
 			<v-icon small class="mr-1" color="grey">mdi-cash</v-icon>
 			<span v-if="tariff.value_kwh" class="text-body-2">
 				{{ $t('plugins.WorkshopPower.consumption.rate') }} <b>{{ money(tariff.value_kwh) }} {{ tariff.currency }}</b> {{ $t('plugins.WorkshopPower.consumption.per_kwh') }}
 			</span>
 			<span v-else-if="!readFailed" class="text-body-2">{{ $t(canChange ? 'plugins.WorkshopPower.consumption.no_rate_enter_the_kwh_cost' : 'plugins.WorkshopPower.consumption.no_rate_set') }}</span>
-			<v-btn x-small text color="primary" class="ml-1" :disabled="!canChange" @click="open = !open">
+			<v-btn small text color="primary" class="ml-2" :disabled="!canChange" @click="open = !open">
 				{{ open ? $t('plugins.WorkshopPower.consumption.close') : $t('plugins.WorkshopPower.consumption.change') }}
 			</v-btn>
 			<!-- below technician the button is disabled and ONE reason says why (session = blue, role = gray, naming the role) -->
@@ -26,9 +26,11 @@
 						/>
 					</v-col>
 					<v-col cols="12" sm="3">
-						<v-btn color="primary" small :loading="saving" @click="save()">{{ $t('plugins.WorkshopPower.consumption.save') }}</v-btn>
+						<wf-action-button :action="saveAct" main :label="$t('plugins.WorkshopPower.consumption.save')" @run="save()" />
 					</v-col>
 				</v-row>
+				<wf-result v-if="saveAct.state !== 'error' || saveAct.error.code === 'unverified'" class="mt-2" :action="saveAct" @retry="saveAct.retry()" />
+				<!-- a refusal is told by its cause (no session / role) by the error notice -->
 				<error-notice :error="error" retry class="mt-2" @retry="save()" />
 			</div>
 		</v-expand-transition>
@@ -44,6 +46,9 @@
 //   <tariff-row :tariff="tariff" @saved="tariff = $event" />      tariff: { currency, value_kwh } as the service answers
 
 import ErrorNotice from './ErrorNotice.vue' // vue/_shared
+import WfActionButton from './WfActionButton.vue' // vue/_shared36 (FASE2)
+import WfResult from './WfResult.vue' // vue/_shared36 (FASE2)
+import { createAction } from './workshop-action.js' // vue/_shared36 (FASE2)
 import { api } from './workshop-api.js'
 import { accessCanMixin } from './reason-mixin.js' // the answers of the service, by operation (vue/_shared36)
 import { TARIFF_OPS } from './access-groups.js'
@@ -51,10 +56,9 @@ import { formatMoney } from './money.js'
 import LockReason from './LockReason.vue' // vue/_shared36
 
 export default {
-	components: { LockReason, ErrorNotice },
+	components: { LockReason, ErrorNotice, WfActionButton, WfResult },
 	mixins: [accessCanMixin],
-	sessionData: ['error', 'open'], // a refused save of the previous person is not shown to the next one
-	sessionErrors: ['error'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
+	sessionData: ['open'],
 	props: {
 		tariff: { type: Object, required: true },
 		readFailed: { type: Boolean, default: false } // the page could not read the rate: it says why, so this row does not say "no rate"
@@ -65,12 +69,16 @@ export default {
 			currency: this.tariff.currency,
 			value: this.tariff.value_kwh ? String(this.tariff.value_kwh) : '',
 			open: false,
-			saving: false,
-			error: null,
+			// the save (workshop-action.js): sending, done / refused, one request at a time
+			saveAct: createAction({ run: () => this.doSave() }),
 			tariffOps: TARIFF_OPS
 		};
 	},
 	computed: {
+		// the refusal of the last save, told by its cause by the error notice (the unconfirmed one is told by the result line)
+		error() {
+			return this.saveAct.state === 'error' && this.saveAct.error.code !== 'unverified' ? this.saveAct.error : null;
+		},
 		// the answer of the service for the operation (the table of the role until it answers)
 		canChange() {
 			return TARIFF_OPS.every(op => this.canDo(op));
@@ -90,26 +98,25 @@ export default {
 		money(v) {
 			return formatMoney(v, this.tariff.currency, this.$i18n.locale);
 		},
-		async save() {
-			this.saving = true;
-			this.error = null;
-			try {
-				const data = await api('energy.rate_set', { currency: String(this.currency), value: Number(parseFloat(this.value)) || 0 });
-				this.$emit('saved', data);
-				this.open = false;
-			} catch (e) {
-				this.error = e;
-			} finally {
-				this.saving = false;
-			}
+		save() {
+			this.saveAct.run({});
+		},
+		async doSave() {
+			const data = await api('energy.rate_set', { currency: String(this.currency), value: Number(parseFloat(this.value)) || 0 });
+			this.$emit('saved', data);
+			this.open = false;
+		},
+		// the person signed in / out or the role changed: what was in the air belonged to the person who left
+		onSessionChange() {
+			this.saveAct.reset();
 		}
 	}
 };
 </script>
 
 <style scoped>
+/* the divider above the rate is the one of its group (.wf-group in Consumption.vue) */
 .tariff-row {
-	border-top: 1px solid rgba(128, 128, 128, 0.2);
-	padding-top: 8px;
+	gap: 4px 0;
 }
 </style>

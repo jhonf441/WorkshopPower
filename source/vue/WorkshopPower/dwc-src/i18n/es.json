@@ -444,7 +444,7 @@
 	},
 	"noMeter": {
 		"title": "Esta máquina no tiene medidor de consumo",
-		"text": "Sin medidor no hay consumo, costo ni energia por trabajo que mostrar, asi que esas secciones estan ocultas. Si después instalas un medidor, activalo aqui.",
+		"text": "Sin medidor no hay consumo, costo ni energia por trabajo que mostrar, asi que esas secciones estan ocultas. Si después instalas un medidor, actívalo aqui.",
 		"enable": "Tengo un medidor Tuya",
 		"enabling": "Activando...",
 		"admin_hint": "Cambiar el perfil necesita una sesión de administrador."

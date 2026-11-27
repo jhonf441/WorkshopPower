@@ -1,76 +1,70 @@
 <template>
-	<!-- ===== Energy per period (bars) ===== -->
-	<v-card class="mb-3">
-		<v-card-text>
-			<div class="d-flex align-center justify-space-between flex-wrap" style="gap:8px">
-				<div class="text-subtitle-1 font-weight-medium">
-					<v-icon small class="mr-1" color="primary">mdi-chart-bar</v-icon>{{ $t('plugins.WorkshopPower.consumption.energy_per_period') }}
-				</div>
-				<div class="d-flex align-center flex-wrap" style="gap:8px">
-					<v-btn-toggle v-model="periodTab" mandatory dense color="primary">
-						<v-btn small value="day">{{ $t('plugins.WorkshopPower.consumption.day') }}</v-btn>
-						<v-btn small value="month">{{ $t('plugins.WorkshopPower.consumption.month') }}</v-btn>
-						<v-btn small value="year">{{ $t('plugins.WorkshopPower.consumption.year') }}</v-btn>
-					</v-btn-toggle>
-					<v-btn small outlined :disabled="!periodData || !periodData.buckets" @click="exportCsv()">
-						<v-icon small left>mdi-download</v-icon>{{ $t('plugins.WorkshopPower.consumption.export_csv') }}
-					</v-btn>
-				</div>
-			</div>
+	<!-- ===== Energy per period (bars): the card of the section (.st-body) with its head; the segments and the navigation in one row ===== -->
+	<div class="period">
+		<card-head icon="mdi-chart-bar" :title="$t('plugins.WorkshopPower.consumption.energy_per_period')">
+			<v-btn small outlined :disabled="!periodData || !periodData.buckets" @click="exportCsv()">
+				<v-icon small left>mdi-download</v-icon>{{ $t('plugins.WorkshopPower.consumption.export_csv') }}
+			</v-btn>
+		</card-head>
 
-			<div class="d-flex align-center justify-center mt-2">
+		<div class="wp-toolbar">
+			<div class="wf-seg period-seg" role="group" :aria-label="$t('plugins.WorkshopPower.consumption.energy_per_period')">
+				<v-btn
+					v-for="p in ['day', 'month', 'year']" :key="p" small outlined :class="{ 'is-on': periodTab === p }"
+					:aria-pressed="periodTab === p ? 'true' : 'false'" @click="periodTab = p"
+				>{{ $t('plugins.WorkshopPower.consumption.' + p) }}</v-btn>
+			</div>
+			<div class="period-nav">
 				<v-btn icon small :aria-label="$t('plugins.WorkshopPower.shared.aria_previous')" @click="navigatePeriod(-1)"><v-icon>mdi-chevron-left</v-icon></v-btn>
-				<span class="text-subtitle-2 mx-2 period-label">{{ periodData ? periodData.label : '--' }}</span>
+				<span class="period-label">{{ periodData ? periodData.label : '--' }}</span>
 				<v-btn icon small :aria-label="$t('plugins.WorkshopPower.shared.aria_next')" :disabled="isPeriodCurrent" @click="navigatePeriod(1)"><v-icon>mdi-chevron-right</v-icon></v-btn>
-				<v-btn v-if="!isPeriodCurrent" x-small text color="primary" @click="goOnCurrent()">{{ textCurrent }}</v-btn>
+				<v-btn v-if="!isPeriodCurrent" small text color="primary" @click="goOnCurrent()">{{ textCurrent }}</v-btn>
 			</div>
+		</div>
 
-			<div class="period-summary">
+		<div class="period-summary">
+			<div>
+				<div class="period-total">
+					{{ periodData && periodData.total_kwh != null ? fmtKwh(periodData.total_kwh) : '--' }}
+					<span class="text-h6 grey--text">kWh</span>
+				</div>
+				<div v-if="periodData" class="text-body-2 grey--text">
+					{{ costOf(periodData.total_kwh) }}
+					<span v-if="comparison" :class="comparison.cssClass" class="ml-2">
+						<v-icon small :color="comparison.color">{{ comparison.icon }}</v-icon>
+						{{ comparison.text }}
+					</span>
+				</div>
+			</div>
+			<div v-if="stats" class="period-stats">
 				<div>
-					<div class="period-total">
-						{{ periodData && periodData.total_kwh != null ? fmtKwh(periodData.total_kwh) : '--' }}
-						<span class="text-h6 grey--text">kWh</span>
-					</div>
-					<div v-if="periodData" class="text-body-2 grey--text">
-						{{ costOf(periodData.total_kwh) }}
-						<span v-if="comparison" :class="comparison.cssClass" class="ml-2">
-							<v-icon small :color="comparison.color">{{ comparison.icon }}</v-icon>
-							{{ comparison.text }}
-						</span>
-					</div>
+					<div class="tile-label">{{ $t('plugins.WorkshopPower.consumption.average_per_unit', { unit: unitBucket }) }}</div>
+					<div class="text-body-1">{{ fmtKwh(stats.average) }} kWh</div>
 				</div>
-				<div v-if="stats" class="period-stats">
-					<div>
-						<div class="tile-label">{{ $t('plugins.WorkshopPower.consumption.average_per_unit', { unit: unitBucket }) }}</div>
-						<div class="text-body-1">{{ fmtKwh(stats.average) }} kWh</div>
-					</div>
-					<div>
-						<div class="tile-label">{{ $t('plugins.WorkshopPower.consumption.highest_usage_unit', { unit: capital(unitBucket) }) }}</div>
-						<div class="text-body-1">{{ stats.maxLabel }} &middot; {{ fmtKwh(stats.max) }} kWh</div>
-					</div>
+				<div>
+					<div class="tile-label">{{ $t('plugins.WorkshopPower.consumption.highest_usage_unit', { unit: capital(unitBucket) }) }}</div>
+					<div class="text-body-1">{{ stats.maxLabel }} &middot; {{ fmtKwh(stats.max) }} kWh</div>
 				</div>
 			</div>
+		</div>
 
-			<consumption-bars
-				v-if="periodData && periodData.buckets"
-				:buckets="periodData.buckets"
-				:current-index="isPeriodCurrent ? periodData.current_index : null"
-				:previous="periodPrevious ? periodPrevious.buckets : null"
-				:price="tariff.value_kwh"
-				:currency="tariff.currency"
-				:average="stats ? stats.average : null"
-				class="mt-2"
-			/>
-			<div v-else class="period-empty">
-				<v-icon large color="grey" aria-hidden="true">mdi-chart-bar</v-icon>
-				<lock-reason v-if="!periodLoading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" :subject="$t('plugins.WorkshopPower.subjects.period')" />
-				<div v-else class="text-body-2">{{ periodLoading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_data_for_this_period') }}</div>
-			</div>
-			<div class="text-caption grey--text mt-1">
-				{{ $t('plugins.WorkshopPower.consumption.tap_a_bar_hint', { prev: textPrevious }) }}
-			</div>
-		</v-card-text>
-	</v-card>
+		<consumption-bars
+			v-if="periodData && periodData.buckets"
+			:buckets="periodData.buckets"
+			:current-index="isPeriodCurrent ? periodData.current_index : null"
+			:previous="periodPrevious ? periodPrevious.buckets : null"
+			:price="tariff.value_kwh"
+			:currency="tariff.currency"
+			:average="stats ? stats.average : null"
+			class="mt-2"
+		/>
+		<div v-else class="period-empty">
+			<v-icon large color="grey" aria-hidden="true">mdi-chart-bar</v-icon>
+			<lock-reason v-if="!periodLoading && refusalKind" :kind="refusalKind" :text="refusalKind === 'role' ? refusal : ''" :subject="$t('plugins.WorkshopPower.subjects.period')" />
+			<div v-else class="text-body-2">{{ periodLoading ? $t('plugins.WorkshopPower.consumption.loading') : $t('plugins.WorkshopPower.consumption.no_data_for_this_period') }}</div>
+		</div>
+		<help-fold class="mt-3" :title="t('period_help_title')" :what="t('period_help_what')" :why="t('period_help_for')" :if-missing="t('period_help_missing')" :how="$t('plugins.WorkshopPower.consumption.tap_a_bar_hint', { prev: textPrevious })" />
+	</div>
 </template>
 
 <script>
@@ -78,6 +72,8 @@ import { api } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js' // what the role may do (vue/_shared)
 import { isRefusal, refusalNow, refusalCauseNow } from './session-refusal.js' // a refusal told by its cause: isRefusal, refusalNow, refusalCauseNow
 import ConsumptionBars from './ConsumptionBars.vue'
+import CardHead from './CardHead.vue' // the head of a card (vue/_shared36)
+import HelpFold from './HelpFold.vue' // vue/_shared36
 import { fmtKwh, costText } from './money.js'
 import { asDateLocal } from './dates.js'
 import { periodTable } from './job-insights.js'
@@ -101,7 +97,7 @@ export default {
 	// what the previous person read stays in no data of the section (ESTANDAR 3.1); onSessionChange reads it again
 	sessionData: ['periodData', 'periodPrevious', 'refused'],
 	sessionErrors: ['refused'], // what a refusal or a failure said: cleared when the person signs in, out or changes role (role-mixin.js)
-	components: { LockReason, ConsumptionBars },
+	components: { LockReason, ConsumptionBars, CardHead, HelpFold },
 	props: {
 		tariff: { type: Object, default: () => ({ currency: '', value_kwh: 0 }) },
 		meter: { type: String, default: '' } // '' = the main meter, 'total' or the key of a meter
@@ -297,9 +293,16 @@ export default {
 	font-size: 12px;
 	color: var(--tp-faint, #9e9e9e);
 }
+.period-nav {
+	display: flex;
+	align-items: center;
+	gap: var(--wf-gap-hit, 8px);
+}
 .period-label {
 	min-width: 90px;
 	text-align: center;
+	font-size: 14px;
+	font-weight: 500;
 }
 .period-empty {
 	display: flex;

@@ -4,7 +4,8 @@
 // loads it in node. The labels are keys of plugins.WorkshopPower.startup.*.
 //
 // The power meter is hardware of the person: a machine without one has nothing to read here, so "no meter yet" is
-// orange (still to configure; "Do not use" turns it off for good), never red.
+// "not in use" (optional: true: neutral, never counted as to do; "Do not use" keeps it out of the way for good), never red.
+// A meter that is configured but does not answer is a real step (red).
 //
 // c = { hayDatos: bool,           the service published consumptionCurrent (a reading arrived)
 //       medidores: [{ ok }],      meters of consumptionCurrent (empty = a service with a single meter)
@@ -20,11 +21,12 @@ export function rowsConsumption(c) {
 	return [
 		{
 			id: 'meter',
+			optional: true,
 			state: !has ? 'example' : noneAnswers ? 'missing' : 'configured',
 			label: 'row_meter', what: 'row_meter_what', why: 'row_meter_for', ifMissing: 'row_meter_missing',
 			help: 'row_meter_tip',
 			params: { n: buenos, total: meters.length },
-			texts: { configured: meters.length > 1 ? 'meter_ok_n' : 'meter_ok', example: 'meter_none', missing: 'meter_silent' }
+			texts: { configured: meters.length > 1 ? 'meter_ok_n' : 'meter_ok', example: 'meter_none', skipped: 'meter_none', missing: 'meter_silent' }
 		},
 		// a fresh reading only means something when there is a meter
 		{

@@ -1,7 +1,7 @@
 <template>
 	<div class="consumption-bars">
 		<div class="bars-area" @click.self="selected = null">
-			<div class="axis-max text-caption">{{ maxVal > 0 ? fmt(maxVal) + ' kWh' : '' }}</div>
+			<div class="axis-max">{{ maxVal > 0 ? fmt(maxVal) + ' kWh' : '' }}</div>
 			<div class="line-max" />
 			<div v-if="average && maxVal > 0" class="line-avg" :style="{ bottom: pct(average) + '%' }">
 				<span class="text-caption">{{ $t('plugins.WorkshopPower.consumptionBars.avg') }}</span>
@@ -159,7 +159,8 @@ export default {
 	top: -18px;
 	left: 0;
 	color: var(--tp-faint, #9e9e9e);
-	font-size: 11px !important;
+	font-size: 12px;
+	line-height: 1.4;
 }
 .line-max {
 	position: absolute;
@@ -182,7 +183,8 @@ export default {
 	right: 0;
 	top: -16px;
 	color: var(--tp-amber, #ffb300);
-	font-size: 10px !important;
+	font-size: 12px;
+	line-height: 1.4;
 }
 .bar-col {
 	position: relative;
@@ -198,20 +200,21 @@ export default {
 	width: 60%;
 	max-width: 22px;
 	min-height: 0;
-	background: #5b7a99;
+	background: var(--pw-bar, rgba(128, 128, 128, 0.55));
 	border-radius: 3px 3px 0 0;
 	transition: height 0.25s ease;
 }
 .bar-col:hover .bar {
-	background: #6f90b3;
+	background: var(--pw-bar-hover, rgba(128, 128, 128, 0.75));
 }
 .bar-current {
-	background: #1976d2;
+	background: var(--wf-accent, #1976d2);
 	background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.12) 0 4px, transparent 4px 8px);
 }
 .bar-sel,
 .bar-col:hover .bar-sel {
-	background: #42a5f5;
+	background: var(--wf-accent, #1976d2);
+	box-shadow: 0 0 0 2px var(--wf-focus, #90caf9);
 }
 .mark-preview {
 	position: absolute;
@@ -239,7 +242,7 @@ export default {
 .tooltip-burbuja {
 	position: absolute;
 	top: 0;
-	background: #1976d2;
+	background: var(--wf-accent, #1976d2);
 	color: #fff;
 	border-radius: 6px;
 	padding: 4px 10px;

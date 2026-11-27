@@ -10,7 +10,7 @@
 
 Page `/Plugins/Power` ("Power usage"). Shows what the machine uses: now (watts, volts, amps), by period (day / month / year), by finished job, and a detailed history; with cost from a price per kWh and a monthly cap. It reads a smart energy meter (here a Tuya meter, read only) through the System service. The meter section configures the meter.
 
-Version documented: 2.7.x on DWC 3.6.3.
+Version documented: 2.11.x on DWC 3.6.3.
 
 ## 1. Requirements
 
@@ -18,7 +18,7 @@ Version documented: 2.7.x on DWC 3.6.3.
 
 ## 2. Install
 
-1. Install WorkshopService. 2. DWC > Settings > Plugins > Install `WorkshopPower-<ver>.zip`; Start. Reload DWC. 3. Open *Monitor > Power usage*. 4. Open *Meter* and set up the meter (see 3.5). Verify: the Summary shows a live reading ("Live" with the age of the reading) and the header "All fine".
+1. Install WorkshopService. 2. DWC > Settings > Plugins > Install `WorkshopPower-<ver>.zip`; Start. Reload DWC. 3. Open *Monitor > Power usage*. 4. Open *Meter* and set up the meter (see 3.5). Verify: the Summary shows a live reading ("Live" with the age of the reading) and the header shows no warning.
 
 ## 3. Functions
 
@@ -27,7 +27,7 @@ The page is "Power usage" (side menu: Plugins > Power). Its side bar has five en
 ### Page header
 
 #### State chip and pending steps
-- What: "All fine" or a warning, and "N steps pending" (setup steps not done yet, for example the meter or the price).
+- What: the version of the plugin and "N step(s) pending" (setup steps not done yet, for example the meter or the price); a warning appears next to them when there is no recent reading or the monthly limit is near.
 - Where: top right of the page header (picture 1).
 - How: read only.
 
@@ -35,23 +35,23 @@ The page is "Power usage" (side menu: Plugins > Power). Its side bar has five en
 
 ![Summary](https://raw.githubusercontent.com/jhonf441/WorkshopPower/main/img/01-summary-live-power.png)
 
-Picture 1: live state at the top left, tiles Today / This month / Month projection, "Set limit" and "Change" (red rectangles). The power reads "--" because the meter did not answer at that moment.
+Picture 1: the "Now" card with the live state and the "Meter" link at its top right (red rectangle), tiles Power / Today / This month / Month projection, "Set limit" and "Change" (red rectangles).
 
 #### Live power
-- What: the power now in watts (W), voltage and current, with the chip "Live - N s ago" and the "Meter" link.
-- Where: top left card (picture 1).
+- What: the power now in watts (W), voltage and current, with the cost per hour at this power, the chip "Live - N s ago" and the "Meter" link.
+- Where: first tile of the "Now" card; the chip and the link are at the top right of the card (picture 1).
 - How: the "Meter" link opens the Meter entry of the side bar.
 - Watch out: W is the power at this moment; kWh is the accumulated energy.
 
 #### Today, This month and Month projection
 - What: energy and cost of today, of the month so far, and the projected total for the month.
-- Where: three tiles at the right of the live card (picture 1).
+- Where: the three tiles next to the Power tile (picture 1).
 - How: read only.
 
 #### Monthly energy limit
 - What: you choose how many kWh you want to use at most per month and the page warns when you get close.
-- Where: card "Monthly energy limit", button "Set limit" (red rectangle, picture 1).
-- How: 1. Press "Set limit". 2. Type the kWh in the field that appears. 3. Press Save (or Cancel). Once set, the card shows the use against the limit with "Change" and "Clear".
+- Where: group "Monthly energy limit", button "Set limit" (red rectangle, picture 1).
+- How: 1. Press "Set limit". 2. Type the kWh in the field that appears. 3. Press Save (or Cancel). Once set, the group shows the use against the limit with "Change" and "Remove limit".
 - Watch out: the limit is saved only in this browser.
 
 #### Rate (price per kWh)
@@ -68,12 +68,12 @@ Picture 2: "Energy per period": Day / Month / Year, date arrows, totals and the 
 
 #### Day / Month / Year and date arrows
 - What: chooses the span (a day by hours, a month by days, a year by months) and moves to the previous or next one.
-- Where: top right buttons and the arrows around the date (picture 2).
+- Where: the buttons under the title and the arrows next to the date (picture 2).
 - How: 1. Press Day, Month or Year. 2. Use the arrows to move.
 
 #### Period totals and comparison
 - What: total energy and cost of the period, how much less or more than the previous period at the same time, average per hour and the hour with the highest usage.
-- Where: left and right of the chart title area (picture 2).
+- Where: above the chart: the total at the left, the average and the busiest hour at the right (picture 2).
 
 #### Bar chart per hour
 - What: bars per hour with the dotted average ("avg.") and the previous day as grey ticks to compare; tap a bar for its value.
@@ -88,11 +88,11 @@ Picture 2: "Energy per period": Day / Month / Year, date arrows, totals and the 
 
 ![Jobs](https://raw.githubusercontent.com/jhonf441/WorkshopPower/main/img/03-finished-jobs.png)
 
-Picture 3: "Finished jobs" with the filters (red rectangle), tiles and "Energy per process".
+Picture 3: "Finished jobs" with the filters and "Export CSV" (red rectangles), tiles and "Energy per process".
 
 #### Filters and sort
-- What: the period (7 days / 30 days), the mode (All / Laser / No mode), "Sort by" (Most recent and others) and "Hide cancelled".
-- Where: top of the card (red rectangle, picture 3).
+- What: the period (7 days / 30 days), the mode (All and one button per mode, shown when there is more than one), "Sort by" (Most recent and others), the grouping ("No grouping" / "By mode") and "Hide cancelled".
+- Where: top of the card (red rectangles, picture 3).
 - How: press the buttons; the tiles and the list follow.
 
 #### Job tiles and energy per process
@@ -102,18 +102,18 @@ Picture 3: "Finished jobs" with the filters (red rectangle), tiles and "Energy p
 #### Job list by day and Export CSV
 - What: the list of jobs grouped by day with energy and cost of each; "Export CSV" downloads it.
 - Where: below "Energy per process"; button at the top right of the card.
-- Watch out: job names are not shown in the picture; "Export CSV" downloads a file.
+- Watch out: "Export CSV" downloads a file.
 
 ### History
 
 ![History](https://raw.githubusercontent.com/jhonf441/WorkshopPower/main/img/04-detailed-history.png)
 
-Picture 4: "Detailed history" with the span buttons (red rectangle), tiles and the Power chart.
+Picture 4: "Detailed history" with the time range button (red rectangle), tiles and the Power chart.
 
-#### Span and date picker
-- What: the span of the readings: 24 h, 7 days, 30 days or a chosen date (calendar button).
+#### Time range
+- What: the span of the readings: the button shows the chosen range (here "Last 24 h"); it offers quick ranges, a "last N units" range and an absolute range from one day and time to another.
 - Where: top right of the card (red rectangle, picture 4).
-- How: press a span or the calendar and pick a day.
+- How: 1. Press the button. 2. Pick a quick range, or set the relative or absolute range.
 
 #### Tiles and charts
 - What: Consumed, Average, Peak, Idle (power when nothing works, with its cost per day) and Readings (one every 30 s); charts Power (W) with the peak line, Voltage (V) and Current (A) over time.
@@ -124,7 +124,7 @@ Picture 4: "Detailed history" with the span buttons (red rectangle), tiles and t
 
 ![Meter settings](https://raw.githubusercontent.com/jhonf441/WorkshopPower/main/img/05-meter-settings.png)
 
-Picture 5: "Meter settings": the list of meters with "Add meter" and "Edit" (red rectangles). ID, address and key are blurred.
+Picture 5: "Meter settings": the list of meters with "Add meter" and "Edit" (red rectangles), and "Meter health" below. ID, address, version and key are blurred.
 
 #### Meter list and state
 - What: each meter with its name, state dot, current power ("Answering"), the roles (here "powers the system" and "cut last") and its ID, IP, version and key (partly hidden).
@@ -139,12 +139,12 @@ Picture 5: "Meter settings": the list of meters with "Add meter" and "Edit" (red
 
 ![Meter health](https://raw.githubusercontent.com/jhonf441/WorkshopPower/main/img/06-meter-health.png)
 
-Picture 6: bottom of the Meter entry: "Meter health" and "How it works".
+Picture 6: bottom of the Meter entry: "Meter health" (red rectangle).
 
-#### Meter health and How it works
-- What: last reading, good readings, failures and success percentage, time between readings, the last failure with its time, and a folded text "How it works" (red rectangle).
+#### Meter health
+- What: the state of the reading process, a short note on why isolated failures are normal, last reading, good readings, failures and success percentage, time between readings, and the last failure with its time.
 - Where: bottom of the Meter entry (picture 6).
-- How: press "How it works" to unfold it.
+- How: read only.
 - Watch out: failures are normal at a low percentage (the meter misses some answers).
 
 ## 4. Settings
@@ -166,7 +166,7 @@ Looking: any role. Changing the price and the meter: technician or admin (`profi
 
 ## 7. Troubleshooting
 
-1. Header not green / no reading: the meter does not answer; check its network and the key (Tuya key rotates when re-paired).
+1. No "Live" chip / no reading: the meter does not answer; check its network and the key (Tuya key rotates when re-paired).
 2. Readings missing in the chart: the service was stopped or the meter unreachable; gaps are not interpolated.
 3. Cost looks wrong: change the price in the Summary.
 4. The monthly cap vanished: it is stored per browser only.

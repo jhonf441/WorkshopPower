@@ -5,8 +5,8 @@
 			<v-icon small :color="healthState.color" aria-hidden="true">{{ healthState.icon }}</v-icon>
 			<span class="text-body-2 font-weight-medium">{{ $t('plugins.WorkshopPower.meterConfig.meter_health', { state: healthState.text }) }}</span>
 			<span class="text-caption grey--text">{{ healthState.detail }}</span>
-			<help-tip :title="$t('plugins.WorkshopPower.meterConfig.meter_health', { state: healthState.text })">{{ $t('plugins.WorkshopPower.meterConfig.the_meter_answers_over_wifi_and') }}</help-tip>
 		</div>
+			<help-line class="mt-1" :text="$t('plugins.WorkshopPower.meterConfig.the_meter_answers_over_wifi_and')" />
 		<div class="health-tiles mt-2">
 			<div class="health-tile">
 				<div class="health-l">{{ $t('plugins.WorkshopPower.meterConfig.last_reading') }}</div>
@@ -29,9 +29,9 @@
 				<div class="health-s">{{ health.interval_max != null ? $t('plugins.WorkshopPower.meterConfig.max') + Math.round(health.interval_max) + ' s (5 min)' : '' }}</div>
 			</div>
 		</div>
-		<div v-if="health.detail" class="text-caption mt-2 health-detail"><v-icon x-small class="mr-1" aria-hidden="true">mdi-information-outline</v-icon>{{ health.detail }}</div>
+		<div v-if="health.detail" class="text-caption mt-2 health-detail"><v-icon small class="mr-1" aria-hidden="true">mdi-information-outline</v-icon>{{ health.detail }}</div>
 		<div v-if="health.error && health.age_error_s != null && health.age_error_s < 3600" class="text-caption mt-1 warning--text">
-			<v-icon x-small color="warning" aria-hidden="true">mdi-alert</v-icon> {{ $t('plugins.WorkshopPower.meterConfig.last_failure_at', { time: health.error_hour, error: health.error }) }}
+			<v-icon small color="warning" aria-hidden="true">mdi-alert</v-icon> {{ $t('plugins.WorkshopPower.meterConfig.last_failure_at', { time: health.error_hour, error: health.error }) }}
 		</div>
 	</div>
 </template>
@@ -40,10 +40,10 @@
 import { pluginOf } from './workshop-ids.js' // Id nuevo o viejo del plugin
 import { dataOf } from './plugin-data.js'
 import { serviceTexts } from './service-text.js'
-import HelpTip from './HelpTip.vue' // vue/_shared36
+import HelpLine from './HelpLine.vue' // vue/_shared36
 
 export default {
-	components: { HelpTip },
+	components: { HelpLine },
 	computed: {
 		health() {
 			const pl = pluginOf(this.$store.state.machine.model.plugins, 'service')
@@ -120,7 +120,7 @@ export default {
 	font-variant-numeric: tabular-nums;
 }
 .health-s {
-	font-size: 11px;
+	font-size: 12px;
 	color: var(--tp-faint, #9e9e9e);
 }
 .health-detail {

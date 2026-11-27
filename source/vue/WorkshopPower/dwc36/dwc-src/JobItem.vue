@@ -8,8 +8,8 @@
 			<div class="job-main">
 				<div class="job-title">
 					<span class="job-name">{{ job.name }}</span>
-					<v-chip v-if="job.origin === 'both'" x-small outlined color="info">{{ $t('plugins.WorkshopPower.consumption.origin_both') }}</v-chip>
-					<v-chip v-if="job.cancelled" x-small outlined color="warning">{{ $t('plugins.WorkshopPower.consumption.cancelled') }}</v-chip>
+					<v-chip v-if="job.origin === 'both'" small outlined color="info">{{ $t('plugins.WorkshopPower.consumption.origin_both') }}</v-chip>
+					<v-chip v-if="job.cancelled" small outlined color="warning">{{ $t('plugins.WorkshopPower.consumption.cancelled') }}</v-chip>
 				</div>
 				<div class="job-meta">
 					{{ job.date }}<template v-if="job.mode"> &middot; {{ job.mode }}</template><template v-if="job.material"> &middot; {{ job.material }}</template> &middot; {{ job.duration }}
@@ -50,7 +50,7 @@
 					<div v-if="!compare" class="det-note">{{ $t('plugins.WorkshopPower.consumption.compare_none') }}</div>
 					<template v-else>
 						<v-chip small outlined :color="compareColor" class="mb-1">
-							<v-icon x-small left>{{ compareIcon }}</v-icon>{{ compareText }}
+							<v-icon small left>{{ compareIcon }}</v-icon>{{ compareText }}
 						</v-chip>
 						<div class="det-note">{{ $t('plugins.WorkshopPower.consumption.compare_basis', { n: compare.n, avg: fmtKwh(compare.avgKwh), min: fmtKwh(compare.minKwh), max: fmtKwh(compare.maxKwh) }) }}</div>
 					</template>
